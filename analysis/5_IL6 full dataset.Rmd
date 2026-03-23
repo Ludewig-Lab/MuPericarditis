@@ -1,0 +1,291 @@
+---
+title: "characterize full dataset"
+author: "Nadine"
+date: "2025-04-09"
+output: 
+html_document:
+  self_contained: no
+  code_folding: show
+  number_sections: no
+  toc: yes
+  toc_depth: 3
+  toc_float: true
+  collapsed: no
+  smooth_scroll: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+seed <- 1234
+```
+
+#Load packages
+```{r}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(reshape2)
+  library(ggplot2)
+  library(cowplot)
+  library(purrr)
+  library(Seurat)
+  library(tidyverse)
+  library(ggpubr)
+  library(runSeurat3)
+  library(here)
+  library(ggsci)
+  library(pheatmap)
+  library(scater)
+})
+```
+
+
+#Load seurat object
+```{r}
+#Load merged and cleaned object from previous analysis
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_cleaned_cL_seurat.rds")
+seuratM <- readRDS(fileNam)
+```
+
+
+#Set color palette for clusters
+```{r}
+colPal <- c( "#CDC1C5","#8B7B8B","#CDC673","#CD5B45","#C1CDC1","#7AC5CD","#7F7F7F","#4A708B","#CD919E","#8B668B","#8B475D","#8FBC8F","#CCCCCC","#8B7D6B","#CDC8B1","#333333")
+
+names(colPal) <- c("B2 Bcells","B1 Bcells", "Cycling cells","Plasma cells", "Tcells", "ILCs", "gdTcells",  "NKcells", "Mono/Mphs", "Neutrophils", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells","Mesothelial cells", "Adipocytes") 
+
+colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
+names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
+
+```
+
+#Visualization in umaps
+```{r}
+Idents(seuratM) <-  seuratM$clusterLabel
+DimPlot(seuratM, reduction = "umap", cols=colPal, group.by= "clusterLabel")+
+  theme_void()
+```
+
+#Load average heatmap function
+```{r avg heatmap funct}
+
+avgHeatmap <- function(seuratA, selGenes, colVecIdent, colVecCond=NULL,
+                       ordVec=NULL, gapVecR=NULL, gapVecC=NULL,cc=FALSE,
+                       cr=FALSE, condCol=FALSE){
+  
+  selGenes <- selGenes$gene
+  
+  ## assay data
+  clusterAssigned <- as.data.frame(Idents(seuratA)) %>%
+  dplyr::mutate(cell=rownames(.))
+  colnames(clusterAssigned)[1] <- "ident"
+  seuratADat <- GetAssayData(seuratA)
+  
+  ## genes of interest
+  genes <- data.frame(gene=rownames(seuratA)) %>% 
+    mutate(geneID=gsub("^.*\\.", "", gene)) %>% filter(geneID %in% selGenes)
+
+  ## matrix with averaged cnts per ident
+  logNormExpres <- as.data.frame(t(as.matrix(
+    seuratADat[which(rownames(seuratADat) %in% genes$gene),])))
+  logNormExpres <- logNormExpres %>% dplyr::mutate(cell=rownames(.)) %>%
+    dplyr::left_join(.,clusterAssigned, by=c("cell")) %>%
+    dplyr::select(-cell) %>% dplyr::group_by(ident) %>%
+    dplyr::summarise_all(mean)
+  logNormExpresMa <- logNormExpres %>% dplyr::select(-ident) %>% as.matrix()
+  rownames(logNormExpresMa) <- logNormExpres$ident
+  logNormExpresMa <- t(logNormExpresMa)
+  rownames(logNormExpresMa) <- gsub("^.*?\\.","",rownames(logNormExpresMa))
+  
+  ## remove genes if they are all the same in all groups
+  ind <- apply(logNormExpresMa, 1, sd) == 0
+  logNormExpresMa <- logNormExpresMa[!ind,]
+  genes <- genes[!ind,]
+
+  ## color columns according to cluster
+  annotation_col <- as.data.frame(gsub("(^.*?_)","",
+                                       colnames(logNormExpresMa)))%>%
+    dplyr::mutate(celltype=gsub("(_.*$)","",colnames(logNormExpresMa)))
+  colnames(annotation_col)[1] <- "col1"
+  annotation_col <- annotation_col %>%
+    dplyr::mutate(cond = gsub("(^[0-9]_?)","",col1)) %>%
+    dplyr::select(cond, celltype)
+  rownames(annotation_col) <- colnames(logNormExpresMa) 
+
+  ann_colors = list(
+      #cond = colVecCond,
+      celltype=colVecIdent)
+  if(is.null(ann_colors$cond)){
+    annotation_col$cond <- NULL
+  }
+  
+  ## adjust order
+  logNormExpresMa <- logNormExpresMa[selGenes,]
+  if(is.null(ordVec)){
+    ordVec <- levels(seuratA)
+  }
+  logNormExpresMa <- logNormExpresMa[,ordVec]
+
+  ## scaled row-wise
+  pheatmap(logNormExpresMa, scale="row" ,treeheight_row = 0, cluster_rows = cr, 
+         cluster_cols = cc,
+         color = colorRampPalette(c("#2166AC", "#F7F7F7", "#B2182B"))(50),
+         annotation_col = annotation_col, cellwidth=15, cellheight=10,
+         annotation_colors = ann_colors, gaps_row = gapVecR, gaps_col = gapVecC)
+}
+```
+
+#Heatmap of IL6 signalling
+```{r, fig.height=7}
+selMarker <- c("Il6", "Il6ra", "Il6st")
+    
+Idents(seuratM) <- seuratM$clusterLabel
+
+selGenes <- data.frame(gene=selMarker) %>%
+  rownames_to_column(var="grp") %>% mutate(Grp=gsub("_.*", "", grp))
+grpCnt <- selGenes %>% group_by(Grp) %>% summarise(cnt=n())
+gapR <- data.frame(Grp=unique(selGenes$Grp)) %>% 
+  left_join(.,grpCnt, by="Grp") %>% mutate(cumSum=cumsum(cnt)) 
+
+
+#Set color palette
+colPal <- c( "#CDC1C5","#8B7B8B","#CDC673","#CD5B45","#C1CDC1","#7AC5CD","#7F7F7F","#4A708B","#CD919E","#8B668B","#8B475D","#8FBC8F","#CCCCCC","#8B7D6B","#CDC8B1","#333333")
+names(colPal) <- c("B2 Bcells","B1 Bcells", "Cycling cells","Plasma cells", "Tcells", "ILCs", "gdTcells",  "NKcells", "Mono/Mphs", "Neutrophils", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells","Mesothelial cells", "Adipocytes")
+
+#Set order
+ordVec <- names(colPal) 
+
+
+pOut <- avgHeatmap(seurat = seuratM, selGenes = selGenes,
+                  colVecIdent = colPal, 
+                  ordVec=ordVec,
+                  gapVecR=gapR$cumSum, gapVecC=NULL,cc=F,
+                  cr=F, condCol=F)
+
+
+```
+
+
+#Feature plots
+```{r}
+#genes <- data.frame(gene=rownames(seuratM))
+
+genes_sel <- c(
+  "ENSMUSG00000025746.Il6",
+  "ENSMUSG00000027947.Il6ra",
+  "ENSMUSG00000021756.Il6st",
+  "ENSMUSG00000002897.Il17ra"
+)
+
+
+plots <- lapply(genes_sel, function(gene) {
+  FeaturePlot(
+    object = seuratM,
+    features = gene,
+    cols = c("#C1CDCD", "#800000"),
+    reduction = "umap", order = T
+  )
+})
+
+for (p in plots) print(p)
+
+```
+
+#Violin plots across all clusters
+```{r}
+#genes <- data.frame(gene=rownames(seuratA))
+
+
+genes_sel <- c(
+  "ENSMUSG00000025746.Il6",
+  "ENSMUSG00000027947.Il6ra",
+  "ENSMUSG00000021756.Il6st",
+  "ENSMUSG00000002897.Il17ra"
+)
+
+# gene expression in cluster
+Idents(seuratM) <- seuratM$clusterLabel
+
+ordX <- names(colPal)
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratM,
+    features = gene,
+    cols = colPal, alpha = 0.05
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratM,
+    features = gene,
+    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+```
+
+
+#Violin plots on selected clusters
+```{r}
+unique(seuratM$clusterLabel)
+Idents(seuratM) <- seuratM$clusterLabel
+dim(seuratM)
+seuratMSub <- subset(seuratM, idents = c("Tcells", "Mono/Mphs", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells", "Mesothelial cells"))
+
+
+genes_sel <- c(
+  "ENSMUSG00000025746.Il6",
+  "ENSMUSG00000027947.Il6ra",
+  "ENSMUSG00000021756.Il6st"
+)
+
+# gene expression in cluster
+Idents(seuratMSub) <- seuratMSub$clusterLabel
+
+ordX <- c("Tcells", "Mono/Mphs", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells", "Mesothelial cells")
+
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratMSub,
+    features = gene,
+    cols = colPal, alpha = 0.05
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratMSub,
+    features = gene,
+    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+```
+
+
+
+#session info
+```{r}
+sessionInfo()
+date()
+```
+

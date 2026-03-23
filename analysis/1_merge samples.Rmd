@@ -1,0 +1,96 @@
+---
+title: "merge samples"
+author: "Nadine"
+date: "2025-04-09"
+output: 
+html_document:
+  self_contained: no
+  code_folding: show
+  number_sections: no
+  toc: yes
+  toc_depth: 3
+  toc_float: true
+  collapsed: no
+  smooth_scroll: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+seed <- 1234
+```
+
+#Load packages
+```{r}
+library(Seurat)
+library(here)
+```
+
+#Load and merge all samples
+```{r}
+#Set working directory
+basedir<- here()
+basedir <- paste0(basedir, "/data/seurat_data/")
+fileNamList <- list.files(path = basedir)
+
+#Merge all files in folder
+for(i in 1:length(fileNamList)){
+  seuratS <- readRDS(paste0(basedir, fileNamList[i]))
+  seuratS@assays$RNA@layers$scale.data <- NULL
+  if(exists("seuratM")){
+    seuratM <- merge(x = seuratM, y = seuratS)
+    cat("Merged", i, "of", length(fileNamList), "files - Total cells:", ncol(seuratM), "\n")
+  }else{
+    seuratM <- seuratS
+    cat("Initialized with first Seurat object:", fileNamList[i], "\n")
+  }
+}
+
+remove(seuratS)
+
+```
+#Metrics
+```{r}
+table(seuratM$dataset)
+table(seuratM$orig.ident)
+```
+
+
+
+#Join layers
+```{r}
+#Join layers of merged seurat object
+seuratM <- JoinLayers(seuratM)
+```
+
+#Run seurat normalization
+```{r}
+#Run seurat normalization for merged seurat object
+seuratM <- NormalizeData (object = seuratM)
+seuratM <- FindVariableFeatures(object = seuratM)
+seuratM <- ScaleData(object = seuratM, verbose = TRUE)
+seuratM <- RunPCA(object=seuratM, npcs = 30, verbose = FALSE)
+seuratM <- RunTSNE(object=seuratM, reduction="pca", dims = 1:20)
+seuratM <- RunUMAP(object=seuratM, reduction="pca", dims = 1:20)
+seuratM <- FindNeighbors(object = seuratM, reduction = "pca", dims= 1:20)
+
+res <- c(0.25, 0.6, 0.8, 0.4)
+for (i in 1:length(res)) {
+  seuratM <- FindClusters(object = seuratM, resolution = res[i], random.seed = 1234)
+}
+
+```
+
+#Save merged seurat object
+```{r}
+#Save merged seurat object
+basedir <- here()
+saveRDS(seuratM, file = paste0(basedir, "/data/pericarditis_allmerged_seurat.rds"))
+```
+
+#Session info
+```{r}
+sessionInfo()
+```
+

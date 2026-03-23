@@ -1,0 +1,165 @@
+---
+
+title: "9_IL6 Ccl19 FRCs"
+author: "Nadine"
+date: "2025-04-09"
+output: 
+html_document:
+  self_contained: no
+  code_folding: show
+  number_sections: no
+  toc: yes
+  toc_depth: 3
+  toc_float: true
+  collapsed: no
+  smooth_scroll: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+seed <- 1234
+```
+
+#Load packages
+```{r}
+suppressPackageStartupMessages({
+  library(dplyr)
+  library(reshape2)
+  library(ggplot2)
+  library(cowplot)
+  library(purrr)
+  library(Seurat)
+  library(tidyverse)
+  library(ggpubr)
+  library(runSeurat3)
+  library(here)
+  library(ggsci)
+  library(pheatmap)
+  library(scater)
+})
+```
+
+
+#Load seurat object
+```{r}
+#Load merged and cleaned object containing FBs
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_FB_cleaned_cL_seurat.rds")
+seuratFB <- readRDS(fileNam)
+```
+
+#Define color palette
+```{r}
+colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
+names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
+
+colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
+names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
+
+```
+
+
+#Violin plots - genes across clusters
+```{r}
+
+#genes <- data.frame(gene=rownames(seuratFB))
+
+#Select genes to plot
+genes_sel <- c(
+  "ENSMUSG00000071005.Ccl19",
+  "ENSMUSG00000025746.Il6",
+  "ENSMUSG00000027947.Il6ra",
+  "ENSMUSG00000021756.Il6st",
+  "ENSMUSG00000002897.Il17ra"
+
+)
+
+#Gene expression across all cluster
+Idents(seuratFB) <- seuratFB$FBclusterLabel
+
+ordX <- c("Cxcl13 CoverCells", "Ccl19 FRCs", "Col11 Fibroblasts", "Dpp4 Fibroblasts", "Fat4 Fibroblasts","Bmp4 Fibroblasts", "Ccl11 Fibroblasts", "Tcf21 Fibroblasts")
+
+#Violin plot
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratFB,
+    features = gene,
+    cols = colPal_FB, alpha = 0.05
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratFB,
+    features = gene,
+    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+```
+
+#Feature plot
+```{r}
+
+plots <- lapply(genes_sel, function(gene) {
+  FeaturePlot(
+    object = seuratFB,
+    features = gene,
+    cols = c("#C1CDCD", "#800000"),
+    reduction = "umap", order = T
+  )
+})
+
+for (p in plots) print(p)
+
+```
+
+#Violin plots - Ccl19 FRCs
+```{r}
+
+#Gene expression in Ccl19 FRCs
+Idents(seuratFB) <- seuratFB$FBclusterLabel
+
+seuratFBSub <- subset(seuratFB, idents = c("Ccl19 FRCs"))
+
+colPal_Phenotype <- c("#E6E6E6", "#FCDACB","#8B0000" )
+names(colPal_Phenotype) <- c("healthy", "inflamed","iCMP")
+
+seuratFBSub$Phenotype <- factor(
+  seuratFBSub$Phenotype,
+  levels = c("healthy", "inflamed", "iCMP")
+)
+
+
+#Violin plot
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratFBSub,
+    features = gene,
+    split.by = "Phenotype",
+    cols = colPal_Phenotype, alpha = 0.1
+  )
+})
+
+for (p in plots) print(p)
+
+
+```
+
+
+
+
+#Session info
+```{r}
+sessionInfo()
+date()
+```
+
+

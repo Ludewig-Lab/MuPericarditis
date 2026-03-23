@@ -1,0 +1,313 @@
+---
+title: "12_cellchat TCRM vs Ctrl"
+author: "Nadine"
+date: "2025-07-14"
+output: 
+html_document:
+  self_contained: no
+  code_folding: show
+  number_sections: no
+  toc: yes
+  toc_depth: 3
+  toc_float: true
+  collapsed: no
+  smooth_scroll: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+seed <- 1234
+```
+
+
+#load packages
+```{r}
+suppressPackageStartupMessages({
+  library(ExploreSCdataSeurat3)
+  library(runSeurat3)
+  library(Seurat)
+  library(ggpubr)
+  library(pheatmap)
+  library(SingleCellExperiment)
+  library(dplyr)
+  library(tidyverse)
+  library(viridis)
+  library(muscat)
+  library(circlize)
+  library(destiny)
+  library(scater)
+  library(metap)
+  library(multtest)
+  library(clusterProfiler)
+  library(org.Mm.eg.db)
+  library(msigdbr)
+  library(enrichplot)
+  library(DOSE)
+  library(grid)
+  library(gridExtra)
+  library(ggupset)
+  library(VennDiagram)
+  library(reshape2)
+  library(ggplot2)
+  library(cowplot)
+  library(purrr)
+  library(here)
+  library(ggsci)
+  library(RColorBrewer)
+  library(CellChat)
+  library(patchwork)
+  library(NMF)
+  library(circlize)
+  library(ComplexHeatmap)
+  library(BiocGenerics)
+  library(BiocNeighbors)
+  library(SeuratObject)
+})
+
+
+```
+
+
+#load seurat object
+```{r}
+#Load full dataset seurat object from previous analysis
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_cleaned_cL_seurat.rds")
+seuratM <- readRDS(fileNam)
+
+```
+
+
+#Set color palette for clusters
+```{r}
+colPal <- c( "#CDC1C5","#8B7B8B","#CDC673","#CD5B45","#C1CDC1","#7AC5CD","#7F7F7F","#4A708B","#CD919E","#8B668B","#8B475D","#8FBC8F","#CCCCCC","#8B7D6B","#CDC8B1","#333333")
+
+names(colPal) <- c("B2 Bcells","B1 Bcells", "Cycling cells","Plasma cells", "Tcells", "ILCs", "gdTcells",  "NKcells", "Mono/Mphs", "Neutrophils", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells","Mesothelial cells", "Adipocytes") 
+
+colPal_Phenotype <- c("#8B0000", "#CD4F39", "#FCDACB", "#E6E6E6")
+names(colPal_Phenotype) <- c("DCM", "iCMP", "inflamed", "healthy")
+
+```
+
+
+#Set order of clusterLabel
+```{r}
+order <- c("B2 Bcells","B1 Bcells", "Cycling cells","Plasma cells", "Tcells", "ILCs", "gdTcells",  "NKcells", "Mono/Mphs", "Neutrophils", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells","Mesothelial cells", "Adipocytes") 
+
+seuratM$clusterLabel <- factor(seuratM$clusterLabel, levels = order)
+```
+
+#Run cellchat for LMC
+```{r, include = T, eval = F}
+#Subset for Controls
+seurat_LMC <- subset(seuratM, cond %in% "LMC")
+sce_LMC <- as.SingleCellExperiment(seurat_LMC)
+rownames(sce_LMC) = gsub("^.*\\.","",rownames(sce_LMC))
+
+#Create cellchat object
+cellchat_LMC <- createCellChat(object = sce_LMC, group.by = "clusterLabel")
+
+#Select database
+CellChatDB <- CellChatDB.mouse
+CellChatDB.use <- CellChatDB
+cellchat_LMC@DB <- CellChatDB.use
+
+#Run analysis
+cellchat_LMC <- subsetData(cellchat_LMC)
+cellchat_LMC <- identifyOverExpressedGenes(cellchat_LMC)
+cellchat_LMC <- identifyOverExpressedInteractions(cellchat_LMC)
+
+#Filter
+options(future.globals.maxSize = 8000 * 1024^2) #necessary if limit too small
+cellchat_LMC <- filterCommunication(cellchat_LMC, min.cells = 5)
+cellchat_LMC <- computeCommunProb(cellchat_LMC, type =  "truncatedMean", trim = 0.2, population.size = FALSE)
+
+cellchat_LMC <- computeCommunProbPathway(cellchat_LMC)
+
+cellchat_LMC <- aggregateNet(cellchat_LMC)
+
+future.seed=TRUE
+cellchat_LMC <- netAnalysis_computeCentrality(cellchat_LMC, slot.name = "netP") 
+
+```
+
+#Save cellchat LMC
+```{r, include = T, eval = F}
+basedir <- here()
+saveRDS(cellchat_LMC, file = paste0(basedir, "/data/pericarditis_allmerged_cleaned_cellchat_LMC.rds"))
+```
+
+#Run cellchat for TCRM
+```{r, include = T, eval = F}
+#Subset for Controls
+seurat_TCRM <- subset(seuratM, cond %in% "TCRM")
+sce_TCRM <- as.SingleCellExperiment(seurat_TCRM)
+rownames(sce_TCRM) = gsub("^.*\\.","",rownames(sce_TCRM))
+
+#Create cellchat object
+cellchat_TCRM <- createCellChat(object = sce_TCRM, group.by = "clusterLabel")
+
+#Select database
+CellChatDB <- CellChatDB.mouse
+CellChatDB.use <- CellChatDB
+cellchat_TCRM@DB <- CellChatDB.use
+
+#Run analysis
+cellchat_TCRM <- subsetData(cellchat_TCRM)
+cellchat_TCRM <- identifyOverExpressedGenes(cellchat_TCRM)
+cellchat_TCRM <- identifyOverExpressedInteractions(cellchat_TCRM)
+
+#Filter
+options(future.globals.maxSize = 8000 * 1024^2) #necessary if limit too small
+cellchat_TCRM <- filterCommunication(cellchat_TCRM, min.cells = 5)
+cellchat_TCRM <- computeCommunProb(cellchat_TCRM, type =  "truncatedMean", trim = 0.2, population.size = FALSE)
+
+cellchat_TCRM <- computeCommunProbPathway(cellchat_TCRM)
+
+cellchat_TCRM <- aggregateNet(cellchat_TCRM)
+
+future.seed=TRUE
+cellchat_TCRM <- netAnalysis_computeCentrality(cellchat_TCRM, slot.name = "netP") 
+
+```
+
+#Save cellchat TCRM
+```{r, include = T, eval = F}
+basedir <- here()
+saveRDS(cellchat_TCRM, file = paste0(basedir, "/data/pericarditis_allmerged_cleaned_cellchat_TCRM.rds"))
+```
+
+
+
+#Load cellchat files
+```{r}
+
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_cleaned_cellchat_LMC.rds")
+cellchat_LMC <- readRDS(fileNam)
+
+
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_cleaned_cellchat_TCRM.rds")
+cellchat_TCRM <- readRDS(fileNam)
+
+
+```
+
+
+# Interaction analysis of IL6 across conditions
+## LMC
+### Calculate the aggregated cell-cell communication network
+```{r}
+#Signaling role analysis on the aggregated cell-cell communication network from all signaling pathways
+gg1 <- netAnalysis_signalingRole_scatter(cellchat_LMC, color.use = colPal)
+gg1
+
+```
+
+
+### Heatmap of sender/ receiver (selected pathways)
+```{r}
+#cellchat_all@netP$pathway
+
+# Define pathways to analyze
+pathways.show <- c("IL6")
+
+# Compute centrality
+cellchat_LMC <- netAnalysis_computeCentrality(cellchat_LMC, slot.name = "netP")
+
+# Loop through each pathway and plot the network role
+for (pathway in pathways.show) {
+  netAnalysis_signalingRole_network(
+    cellchat_LMC,
+    signaling = pathway,
+    width = 8,
+    height = 2.5,
+    font.size = 10,
+    color.use = colPal,
+    color.heatmap = "Greys"
+  )
+}
+```
+
+### Chord diagram for selected pathways
+```{r}
+
+
+# Define signaling pathways you to visualize
+pathways.show <- c("IL6")
+
+
+# Loop through each and generate the chord diagram
+for (pathway in pathways.show) {
+  netVisual_aggregate(
+    cellchat_LMC,
+    signaling = pathway,
+    layout = "chord",
+    color.use = colPal,
+    title.name = pathway
+  )
+}
+
+
+```
+
+
+##TCRM
+### Calculate the aggregated cell-cell communication network
+```{r}
+# Signaling role analysis on the aggregated cell-cell communication network from all signaling pathways
+gg1 <- netAnalysis_signalingRole_scatter(cellchat_TCRM, color.use = colPal)
+gg1
+
+```
+
+### Heatmap of sender/ receiver (selected pathways)
+```{r}
+#cellchat_all@netP$pathway
+
+# Define pathways to analyze
+pathways.show <- c("IL6")
+
+# Compute centrality
+cellchat_TCRM <- netAnalysis_computeCentrality(cellchat_TCRM, slot.name = "netP")
+
+# Loop through each pathway and plot the network role
+for (pathway in pathways.show) {
+  netAnalysis_signalingRole_network(
+    cellchat_TCRM,
+    signaling = pathway,
+    width = 8,
+    height = 2.5,
+    font.size = 10,
+    color.use = colPal,
+    color.heatmap = "Reds"
+  )
+}
+```
+
+### Chord diagram for selected pathways
+```{r}
+
+
+# Define signaling pathways you to visualize
+pathways.show <- c("IL6")
+
+
+# Loop through each and generate the chord diagram
+for (pathway in pathways.show) {
+  netVisual_aggregate(
+    cellchat_TCRM,
+    signaling = pathway,
+    layout = "chord",
+    color.use = colPal,
+    title.name = pathway
+  )
+}
+
+
+```
+
+

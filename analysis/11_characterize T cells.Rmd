@@ -1,0 +1,569 @@
+---
+title: "characterize T cells"
+author: "Nadine"
+date: "2025-04-09"
+output: 
+html_document:
+  self_contained: no
+  code_folding: show
+  number_sections: no
+  toc: yes
+  toc_depth: 3
+  toc_float: true
+  collapsed: no
+  smooth_scroll: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+seed <- 1234
+```
+
+#load packages
+```{r}
+suppressPackageStartupMessages({
+  library(ExploreSCdataSeurat3)
+  library(runSeurat3)
+  library(Seurat)
+  library(ggpubr)
+  library(pheatmap)
+  library(SingleCellExperiment)
+  library(dplyr)
+  library(tidyverse)
+  library(viridis)
+  library(muscat)
+  library(circlize)
+  library(destiny)
+  library(scater)
+  library(metap)
+  library(multtest)
+  library(clusterProfiler)
+  library(org.Mm.eg.db)
+  library(msigdbr)
+  library(enrichplot)
+  library(DOSE)
+  library(grid)
+  library(gridExtra)
+  library(ggupset)
+  library(VennDiagram)
+  library(reshape2)
+  library(ggplot2)
+  library(cowplot)
+  library(purrr)
+  library(here)
+  library(ggsci)
+  library(RColorBrewer)
+})
+```
+
+#Load seurat object
+```{r}
+
+#Load merged and cleaned object from previous analysis
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_Tcells_cleaned_seurat.rds")
+seuratT <- readRDS(fileNam)
+
+```
+
+
+#Visualization in umap
+```{r}
+Idents(seuratT) <-  seuratT$RNA_snn_res.0.1
+DimPlot(seuratT, reduction = "umap", group.by= "RNA_snn_res.0.1", label = T)
+
+```
+
+#Marker genes per cluster
+```{r, include = T, eval = T}
+#Set identity to resolution 0.1
+Idents(seuratT) <-  seuratT$RNA_snn_res.0.1
+
+#Run Marker Genes
+seuratT_markers_all <- FindAllMarkers(object = seuratT, assay ="RNA",
+                                     only.pos = TRUE, min.pct = 0.25,
+                                     logfc.threshold = 0.25,
+                                     test.use = "wilcox")
+
+#Save marker genes as text file
+basedir<- here()
+basedir <- paste0(basedir, "/docs/")
+write.table(
+  seuratT_markers_all,
+  file = paste0(basedir, "pericarditis_allmerged_Tcells_cleaned_0.1_markerGenes.txt"),
+  row.names = FALSE,
+  quote = FALSE,
+  sep = "\t"
+)
+
+```
+
+#Assign labels to Tcell clusters
+```{r}
+seuratT$TclusterLabel <- seuratT$RNA_snn_res.0.1
+
+seuratT$TclusterLabel <- "TclusterLabel"
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c("0"))] <- "CD4 Tscm"
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c("1"))] <- "Tem"
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c("2"))] <- "gd Tcell"
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c("3"))] <- "CD8 Tscm"
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c("4"))] <- "NKT"
+```
+
+
+#define cluster color palette
+```{r}
+
+colPal_T <- c("#CDCDC1","#CDC673", "#CD6600" ,"#8B3E2F","#2F4F4F" )
+names(colPal_T) <- c("CD4 Tscm", "Tem", "gd Tcell", "NKT", "CD8 Tscm")
+
+colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
+names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
+```
+
+#Stats
+```{r}
+table(seuratT$orig.ident)
+table(seuratT$TclusterLabel)
+table(seuratT$TclusterLabel, seuratT$cond)
+table(seuratT$Phenotype)
+table(seuratT$cond)
+table(seuratT$TclusterLabel, seuratT$SampleName)
+```
+
+#DimPlot TclusterLabel
+```{r}
+Idents(seuratT) <-  seuratT$TclusterLabel
+
+DimPlot(seuratT, reduction = "umap", cols=colPal_T, group.by= "TclusterLabel")
+DimPlot(seuratT, reduction = "umap", cols=colPal_T, label = F, group.by= "TclusterLabel", split.by = "cond")
+```
+
+#DimPlot Condition
+```{r}
+DimPlot(seuratT, reduction = "umap", cols=c("#D3D3D3", "#B45B5C"), group.by = "cond")
+
+DimPlot(seuratT, reduction = "umap", cols=c("#D3D3D3", "#B45B5C"), group.by = "cond", split.by = "cond")
+
+```
+
+#DimPlot Phenotype
+```{r}
+DimPlot(seuratT, reduction = "umap", cols=colPal_Phenotype, group.by = "Phenotype")
+
+DimPlot(seuratT, reduction = "umap", group.by = "Phenotype", cols = colPal_Phenotype, order = c("iCMP", "inflamed","healthy"), pt.size = 0.02)
+
+
+DimPlot(seuratT, reduction = "umap", cols=c("#E6E6E6","#E6E6E6","#FCDACB"), group.by = "Phenotype", order = "inflamed")
+DimPlot(seuratT, reduction = "umap", cols=c("#E6E6E6","#E6E6E6","#8B0000"), group.by = "Phenotype", order = "iCMP")
+
+
+```
+
+
+#DimPlot Age
+```{r}
+DimPlot(seuratT, reduction = "umap", cols=c("#99B898", "#628395"), group.by = "age", split.by = "age")
+DimPlot(seuratT, reduction = "umap", cols=c("#D3D3D3", "#628395"), group.by = "age", order = "8wk")
+DimPlot(seuratT, reduction = "umap", cols=c("#D3D3D3", "#99B898"), group.by = "age", order = "4wk")
+DimPlot(seuratT, reduction = "umap", cols=c("#D3D3D3", "#B45B5C"), group.by = "cond", split.by = "age")
+
+```
+
+# Feature plots - T cell identity
+```{r}
+#genes <- data.frame(gene=rownames(seuratT))
+
+
+genes_sel <- c(
+  "ENSMUSG00000032093.Cd3e",
+  "ENSMUSG00000023274.Cd4",
+  "ENSMUSG00000031004.Mki67",
+  "ENSMUSG00000000782.Tcf7",
+  "ENSMUSG00000037944.Ccr7",
+  "ENSMUSG00000000409.Lck",
+  "ENSMUSG00000026581.Sell",
+  "ENSMUSG00000005087.Cd44",
+  "ENSMUSG00000003882.Il7r",
+  "ENSMUSG00000055170.Ifng",
+  "ENSMUSG00000024778.Fas",
+  "ENSMUSG00000020644.Id2",
+  "ENSMUSG00000104876.Trdc",
+  "ENSMUSG00000076749.Trgc1",
+  "ENSMUSG00000076490.Trbc1",
+  "ENSMUSG00000066687.Zbtb16",
+  "ENSMUSG00000049093.Il23r",
+  "ENSMUSG00000023132.Gzma",
+  "ENSMUSG00000027947.Il6ra",
+  "ENSMUSG00000025929.Il17a",
+  "ENSMUSG00000021756.Il6st",
+  "ENSMUSG00000053977.Cd8a"
+)
+
+
+plots <- lapply(genes_sel, function(gene) {
+  FeaturePlot(
+    object = seuratT,
+    features = gene,
+    cols = c("#C1CDCD", "#800000"),
+    reduction = "umap", order = T
+  )
+})
+
+for (p in plots) print(p)
+
+```
+
+
+#Marker genes per cluster
+```{r, include = T, eval = T}
+#Set identity to TclusterLabel
+Idents(seuratT) <-  seuratT$TclusterLabel
+
+#Run Marker Genes
+seuratT_markers_all <- FindAllMarkers(object = seuratT, assay ="RNA",
+                                     only.pos = TRUE, min.pct = 0.25,
+                                     logfc.threshold = 0.25,
+                                     test.use = "wilcox")
+
+#Save marker genes as text file
+basedir<- here()
+basedir <- paste0(basedir, "/docs/")
+write.table(
+  seuratT_markers_all,
+  file = paste0(basedir, "pericarditis_allmerged_Tcells_cleaned_0.1_cL_markerGenes.txt"),
+  row.names = FALSE,
+  quote = FALSE,
+  sep = "\t"
+)
+
+```
+
+#Load MarkerGenes
+```{r}
+
+basedir<- here()
+fileNam <- paste0(basedir, "/docs/pericarditis_allmerged_Tcells_cleaned_0.1_cL_markerGenes.txt")
+seuratT_MarkerGenes <- read.table(fileNam, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
+  
+```
+
+
+#Average heatmap function
+```{r avg heatmap funct}
+
+avgHeatmap <- function(seuratT, selGenes, colVecIdent, colVecCond=NULL,
+                       ordVec=NULL, gapVecR=NULL, gapVecC=NULL,cc=FALSE,
+                       cr=FALSE, condCol=FALSE){
+  
+  selGenes <- selGenes$gene
+  
+  ## assay data
+  clusterAssigned <- as.data.frame(Idents(seuratT)) %>%
+  dplyr::mutate(cell=rownames(.))
+  colnames(clusterAssigned)[1] <- "ident"
+  seuratTDat <- GetAssayData(seuratT)
+  
+  ## genes of interest
+  genes <- data.frame(gene=rownames(seuratT)) %>% 
+    mutate(geneID=gsub("^.*\\.", "", gene)) %>% filter(geneID %in% selGenes)
+
+  ## matrix with averaged cnts per ident
+  logNormExpres <- as.data.frame(t(as.matrix(
+    seuratTDat[which(rownames(seuratTDat) %in% genes$gene),])))
+  logNormExpres <- logNormExpres %>% dplyr::mutate(cell=rownames(.)) %>%
+    dplyr::left_join(.,clusterAssigned, by=c("cell")) %>%
+    dplyr::select(-cell) %>% dplyr::group_by(ident) %>%
+    dplyr::summarise_all(mean)
+  logNormExpresMa <- logNormExpres %>% dplyr::select(-ident) %>% as.matrix()
+  rownames(logNormExpresMa) <- logNormExpres$ident
+  logNormExpresMa <- t(logNormExpresMa)
+  rownames(logNormExpresMa) <- gsub("^.*?\\.","",rownames(logNormExpresMa))
+  
+  ## remove genes if they are all the same in all groups
+  ind <- apply(logNormExpresMa, 1, sd) == 0
+  logNormExpresMa <- logNormExpresMa[!ind,]
+  genes <- genes[!ind,]
+
+  ## color columns according to cluster
+  annotation_col <- as.data.frame(gsub("(^.*?_)","",
+                                       colnames(logNormExpresMa)))%>%
+    dplyr::mutate(celltype=gsub("(_.*$)","",colnames(logNormExpresMa)))
+  colnames(annotation_col)[1] <- "col1"
+  annotation_col <- annotation_col %>%
+    dplyr::mutate(cond = gsub("(^[0-9]_?)","",col1)) %>%
+    dplyr::select(cond, celltype)
+  rownames(annotation_col) <- colnames(logNormExpresMa) 
+
+  ann_colors = list(
+      #cond = colVecCond,
+      celltype=colVecIdent)
+  if(is.null(ann_colors$cond)){
+    annotation_col$cond <- NULL
+  }
+  
+  ## adjust order
+  logNormExpresMa <- logNormExpresMa[selGenes,]
+  if(is.null(ordVec)){
+    ordVec <- levels(seuratT)
+  }
+  logNormExpresMa <- logNormExpresMa[,ordVec]
+
+  ## scaled row-wise
+  pheatmap(logNormExpresMa, scale="row" ,treeheight_row = 0, cluster_rows = cr, 
+         cluster_cols = cc,
+         color = colorRampPalette(c("#2166AC", "#F7F7F7", "#B2182B"))(50),
+         annotation_col = annotation_col, cellwidth=15, cellheight=10,
+         annotation_colors = ann_colors, gaps_row = gapVecR, gaps_col = gapVecC)
+}
+```
+
+
+#top 10 marker genes per cluster
+```{r, fig.height=10}
+cluster <- levels(seuratT)
+selGenesAll <- seuratT_MarkerGenes %>% group_by(cluster) %>% 
+  top_n(-10, p_val_adj) %>% 
+  top_n(10, avg_log2FC)
+names(selGenesAll) [names(selGenesAll) == "gene"] <- "Gene"
+selGenesAll <- selGenesAll %>% mutate(gene=gsub("^.*\\.", "", Gene)) %>% filter(nchar(Gene)>1)
+
+colPal_T <- c("#CDCDC1","#CDC673", "#CD6600" ,"#8B3E2F","#2F4F4F" )
+names(colPal_T) <- c("CD4 Tscm", "Tem", "gd Tcell", "NKT", "CD8 Tscm")
+
+ordVec <- names(colPal_T)
+
+Idents(seuratT) <- seuratT$TclusterLabel
+pOut <- avgHeatmap(seurat = seuratT, selGenes = selGenesAll,
+                  colVecIdent = colPal_T, 
+                  ordVec=ordVec,
+                  gapVecR=NULL, gapVecC=NULL,cc=F,
+                  cr=T, condCol=F)
+```
+
+#Dotplot of selected marker genes
+```{r, fig.height=3.5, fig.width=4.5}
+
+Idents(seuratT) <- seuratT$TclusterLabel
+
+#Marker genes as simple vector
+selMarker <- c("Cd3e", "Cd4", "Cd8a", "Zbtb16", "Sell", "Cd44", "Id2",  "Klrd1", "Foxp3", "Tcf7")
+
+#Assign a full gene name to the short geneID
+genes <- data.frame(gene=rownames(seuratT)) %>% mutate(geneID=gsub(".*\\.", "", gene)) %>% 
+  filter(geneID %in% as.character(selMarker)) %>% arrange(factor(geneID, levels = rev(selMarker)))
+
+#Create dataframe of cL
+clusterDat <- data.frame(cluster=levels(seuratT)) %>%
+  mutate(label = levels(seuratT))
+
+
+#Scale the gene across all clusters
+DotPlot(
+  object=seuratT,
+  features = genes$gene,
+  cols = c("#2C3E50", "#F1E6A1"),
+  col.min = -2.5,
+  col.max = 2.5,
+  dot.min = 0,
+  dot.scale = 6,
+  idents = NULL,
+  group.by = NULL,
+  split.by = NULL,
+  cluster.idents = T, #TRUE= automatic order, FALSE= ordered 
+  scale = T,
+  scale.by = "radius",
+  scale.min = NA,
+  scale.max = NA
+) + coord_flip() + scale_x_discrete(breaks=genes$gene, labels=genes$geneID)  + scale_y_discrete(breaks=clusterDat$cluster, labels=clusterDat$label) + theme(axis.text.x = element_text(angle = 90))
+
+```
+
+
+
+# T cell activation across conditions per cluster
+```{r}
+#Define cluster-condition label
+seuratT$cluster_cond <- paste0(seuratT$TclusterLabel, "_", seuratT$cond)
+
+#Define color palette for clusters
+colPal_T <- c("#CDCDC1","#CDC673", "#CD6600" ,"#8B3E2F","#2F4F4F" )
+names(colPal_T) <- c("CD4 Tscm", "Tem", "gd Tcell", "NKT", "CD8 Tscm")
+
+#Set ordered cluster list
+ordClusters <- names(colPal_T)
+
+#Extract unique condition labels
+ordConds <- unique(seuratT$cond)
+
+#Order clusters by condition
+ordVec_full <- as.vector(t(outer(ordClusters, ordConds, paste, sep = "_")))
+
+#Assign as the factor levels for Seurat identities
+Idents(seuratT) <- factor(seuratT$cluster_cond, levels = ordVec_full)
+
+#Define marker genes
+selMarker <- list(
+  Tcells_ = c(
+    "Mki67",
+    "Tcf7", "Il2ra", "Ctla4",
+    "Gata3", "Tbx21", "Rorc",
+    "Ifng", "Il17a", "Sell",
+    "Cd44", "Id2", "Prf1",
+    "Foxp3"
+  )
+)
+
+#Prepare selGenes and gapR
+selGenes <- data.frame(gene = unlist(selMarker)) %>%
+  tibble::rownames_to_column(var = "grp") %>%
+  dplyr::mutate(Grp = gsub("_.*", "", grp))
+
+grpCnt <- selGenes %>%
+  dplyr::group_by(Grp) %>%
+  dplyr::summarise(cnt = dplyr::n())
+
+gapR <- data.frame(Grp = unique(selGenes$Grp)) %>%
+  dplyr::left_join(grpCnt, by = "Grp") %>%
+  dplyr::mutate(cumSum = cumsum(cnt))
+
+#Generate heatmap
+pOut <- avgHeatmap(
+  seurat = seuratT,
+  selGenes = selGenes,
+  colVecIdent = colPal_T,
+  ordVec = ordVec_full,
+  gapVecR = gapR$cumSum,
+  gapVecC = NULL,
+  cc = FALSE,
+  cr = TRUE,
+  condCol = TRUE
+)
+
+```
+
+
+#Abundance across non-sorted samples
+```{r}
+#Plot abundance of clusters in individual samples
+##Leave out sorted samples
+
+seuratTSub <- subset(seuratT, SampleName %in% c("8w_LMC8", "8w_TCRM7", "8w_TCRM8"), invert=TRUE )
+  
+##run calculations
+datList <- NULL
+for(con in unique(seuratTSub$SampleName)){
+  seuratT_sub <- subset(seuratTSub, SampleName==con)
+  print(dim(seuratT_sub))
+  dat_SampleName <- as.data.frame(table(seuratT_sub$TclusterLabel)) %>%
+  mutate(percent=Freq/ncol(seuratT_sub)) %>% mutate(SampleName=con)
+  datList[[con]] <- dat_SampleName
+}
+dat_all <- do.call("rbind", datList)
+
+
+ordX <- c("4w_LMC1", "4w_LMC2", "4w_LMC3", "4w_LMC4", "8w_LMC1", "8w_LMC2", "8w_LMC3", "8w_LMC4", "8w_LMC5", "8w_LMC6", "8w_LMC7",  "4w_TCRM1", "4w_TCRM2", "4w_TCRM3", "4w_TCRM4", "4w_TCRM5", "4w_TCRM6", "4w_TCRM7", "8w_TCRM1", "8w_TCRM2", "8w_TCRM3", "8w_TCRM4", "8w_TCRM5", "8w_TCRM6")
+
+#Create barplot with samples on x axis and cluster colors
+ggbarplot(dat_all, x= "SampleName", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency") +  scale_fill_manual(values = colPal_T) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) 
+
+
+
+```
+
+#Abundance across phenotypes
+```{r, fig.height=3, fig.width=4}
+
+datList <- NULL
+for(con in unique(seuratT$Phenotype)){
+  seuratTSub <- subset(seuratT, Phenotype==con)
+  print(dim(seuratTSub))
+  dat_Phenotype <- as.data.frame(table(seuratTSub$TclusterLabel)) %>%
+  mutate(percent=Freq/ncol(seuratTSub)) %>% mutate(Phenotype=con)
+  datList[[con]] <- dat_Phenotype
+}
+dat_all <- do.call("rbind", datList)
+
+#Set order of Phenotypes
+ordX <- c("healthy", "inflamed", "iCMP")
+
+#Create barplot with Phenotypes on x axis and cluster colors
+ggbarplot(dat_all, x= "Phenotype", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency") +  scale_fill_manual(values = colPal_T) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) 
+```
+
+#Abundance across conditions
+```{r, , fig.height=3, fig.width=4}
+datList <- NULL
+for(con in unique(seuratT$cond)){
+  seuratTSub <- subset(seuratT, cond==con)
+  print(dim(seuratTSub))
+  dat_con <- as.data.frame(table(seuratTSub$TclusterLabel)) %>%
+  mutate(percent=Freq/ncol(seuratTSub)) %>% mutate(cond=con)
+  datList[[con]] <- dat_con
+}
+dat_all <- do.call("rbind", datList)
+
+## plot abundance
+ggbarplot(dat_all, x= "cond", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency")+ scale_fill_manual(values = colPal_T)
+
+```
+
+
+#Violin plots - Il6 receptors
+```{r}
+#genes <- data.frame(gene=rownames(seuratT))
+
+
+genes_sel <- c(
+  "ENSMUSG00000027947.Il6ra",
+  "ENSMUSG00000021756.Il6st"
+)
+
+# gene expression in cluster
+Idents(seuratT) <- seuratT$TclusterLabel
+
+ordX <- names(colPal_T)
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratT,
+    features = gene,
+    cols = colPal_T, alpha = 0.05
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+
+plots <- lapply(genes_sel, function(gene) {
+  VlnPlot(
+    object = seuratT,
+    features = gene,
+    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
+  ) + scale_x_discrete(limits=ordX)
+})
+
+for (p in plots) print(p)
+
+
+```
+
+
+#Save seurat object
+```{r}
+#Save seurat object
+basedir <- here()
+saveRDS(seuratT, file = paste0(basedir, "/data/pericarditis_allmerged_Tcells_cleaned_seurat_cL.rds"))
+```
+
+
+#session info
+```{r}
+sessionInfo()
+date()
+```
+
+
