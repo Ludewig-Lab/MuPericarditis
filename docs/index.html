@@ -281,7 +281,7 @@ $(document).ready(function () {
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-report" data-toggle="collapse" data-target="#workflowr-report">
 <span class="glyphicon glyphicon-list" aria-hidden="true"></span>
-workflowr <span class="glyphicon glyphicon-ok text-success"
+workflowr <span class="glyphicon glyphicon-exclamation-sign text-danger"
 aria-hidden="true"></span>
 </button>
 </p>
@@ -292,8 +292,8 @@ aria-hidden="true"></span>
 </li>
 <li>
 <a data-toggle="tab" href="#checks"> Checks <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
-</a>
+class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> </a>
 </li>
 <li>
 <a data-toggle="tab" href="#versions">Past versions</a>
@@ -302,16 +302,16 @@ class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-11-26
+<strong>Last updated:</strong> 2026-04-29
 </p>
 <p>
 <strong>Checks:</strong> <span
-class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 2
+class="glyphicon glyphicon-ok text-success" aria-hidden="true"></span> 1
 <span class="glyphicon glyphicon-exclamation-sign text-danger"
-aria-hidden="true"></span> 0
+aria-hidden="true"></span> 1
 </p>
 <p>
-<strong>Knit directory:</strong> <code>Mu_Pericarditis/</code> <span
+<strong>Knit directory:</strong> <code>MuPericarditis/</code> <span
 class="glyphicon glyphicon-question-sign" aria-hidden="true"
 title="This is the local directory in which the code in this file was executed.">
 </span>
@@ -331,31 +331,36 @@ versions</em> tab lists the development history.
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguptodate">
-<span class="glyphicon glyphicon-ok text-success"
-aria-hidden="true"></span> <strong>R Markdown file:</strong> up-to-date
-</a>
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRMarkdownfilestronguncommittedchanges">
+<span class="glyphicon glyphicon-exclamation-sign text-danger"
+aria-hidden="true"></span> <strong>R Markdown file:</strong> uncommitted
+changes </a>
 </p>
 </div>
-<div id="strongRMarkdownfilestronguptodate"
+<div id="strongRMarkdownfilestronguncommittedchanges"
 class="panel-collapse collapse">
 <div class="panel-body">
-<p>Great! Since the R Markdown file has been committed to the Git
-repository, you know the exact version of the code that produced these
-results.</p>
+<p>The R Markdown file has unstaged changes. To know which version of
+the R Markdown file created these results, you’ll want to first commit
+it to the Git repo. If you’re still working on the analysis, you can
+ignore this warning. When you’re finished, you can run
+<code>wflow_publish</code> to commit the R Markdown file and build the
+HTML.</p>
 </div>
 </div>
 </div>
 <div class="panel panel-default">
 <div class="panel-heading">
 <p class="panel-title">
-<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrong503de13">
+<a data-toggle="collapse" data-parent="#workflowr-checks" href="#strongRepositoryversionstrongahrefhttpsgithubcomLudewigLabMousePericarditistree44ff49daae67ee9298057f7d2e2a15203d1b2488targetblank44ff49da">
 <span class="glyphicon glyphicon-ok text-success"
-aria-hidden="true"></span> <strong>Repository version:</strong> 503de13
+aria-hidden="true"></span> <strong>Repository version:</strong>
+<a href="https://github.com/Ludewig-Lab/Mouse_Pericarditis/tree/44ff49daae67ee9298057f7d2e2a15203d1b2488" target="_blank">44ff49d</a>
 </a>
 </p>
 </div>
-<div id="strongRepositoryversionstrong503de13"
+<div
+id="strongRepositoryversionstrongahrefhttpsgithubcomLudewigLabMousePericarditistree44ff49daae67ee9298057f7d2e2a15203d1b2488targetblank44ff49da"
 class="panel-collapse collapse">
 <div class="panel-body">
 <p>
@@ -364,7 +369,8 @@ and connecting the code version to the results is critical for
 reproducibility.
 </p>
 <p>
-The results in this page were generated with repository version 503de13.
+The results in this page were generated with repository version
+<a href="https://github.com/Ludewig-Lab/Mouse_Pericarditis/tree/44ff49daae67ee9298057f7d2e2a15203d1b2488" target="_blank">44ff49d</a>.
 See the <em>Past versions</em> tab to see a history of the changes made
 to the R Markdown and HTML files.
 </p>
@@ -379,7 +385,29 @@ were generated:
 </p>
 <pre><code>
 Ignored files:
-    Ignored:    .Rproj.user/
+    Ignored:    data/
+
+Untracked files:
+    Untracked:  .DS_Store
+    Untracked:  MuPericarditis.Rproj
+    Untracked:  analysis/13_cellchat T FB merge.Rmd
+
+Unstaged changes:
+    Deleted:    Mu_Pericarditis.Rproj
+    Modified:   analysis/.Rhistory
+    Modified:   analysis/10_subset T cells.Rmd
+    Modified:   analysis/11_characterize T cells.Rmd
+    Modified:   analysis/12_cellchat TCRM vs Ctrl.Rmd
+    Modified:   analysis/1_merge samples.Rmd
+    Modified:   analysis/2_assign metadata.Rmd
+    Modified:   analysis/3_data cleanup.Rmd
+    Modified:   analysis/4_characterize full dataset.Rmd
+    Modified:   analysis/5_IL6 full dataset.Rmd
+    Modified:   analysis/6_Subset FBs.Rmd
+    Modified:   analysis/7_characterize FBs.Rmd
+    Modified:   analysis/8_FRC Ctrl vs TCRM.Rmd
+    Modified:   analysis/9_IL6 FBs.Rmd
+    Modified:   analysis/index.Rmd
 
 </code></pre>
 <p>
@@ -429,16 +457,33 @@ Message
 Rmd
 </td>
 <td>
-503de13
+<a href="https://github.com/Ludewig-Lab/Mouse_Pericarditis/blob/44ff49daae67ee9298057f7d2e2a15203d1b2488/analysis/index.Rmd" target="_blank">44ff49d</a>
 </td>
 <td>
 nadinealessia
 </td>
 <td>
-2025-11-26
+2026-03-23
 </td>
 <td>
-Start workflowr project.
+Setup repository
+</td>
+</tr>
+<tr>
+<td>
+html
+</td>
+<td>
+<a href="https://rawcdn.githack.com/Ludewig-Lab/Mouse_Pericarditis/44ff49daae67ee9298057f7d2e2a15203d1b2488/docs/index.html" target="_blank">44ff49d</a>
+</td>
+<td>
+nadinealessia
+</td>
+<td>
+2026-03-23
+</td>
+<td>
+Setup repository
 </td>
 </tr>
 </tbody>
@@ -448,7 +493,69 @@ Start workflowr project.
 </div>
 </div>
 </div>
-<p>Welcome to my research website.</p>
+<div id="pericardial-cells" class="section level2">
+<h2>Pericardial Cells</h2>
+<div id="pericardial-cells-tcrm-and-ctrl" class="section level3">
+<h3>Pericardial Cells TCRM and Ctrl</h3>
+<p>Pericardial Cells TCRM and Ctrl <a
+href="4_characterize-full-dataset.html">link</a></p>
+</div>
+<div id="il6-signaling-in-pericardial-cells" class="section level3">
+<h3>IL6 Signaling in Pericardial Cells</h3>
+<p>IL6 Signaling in Pericardial Cells <a
+href="5_IL6-full-dataset.html">link</a></p>
+</div>
+</div>
+<div id="pericardial-fibroblasts" class="section level2">
+<h2>Pericardial Fibroblasts</h2>
+<div id="subset-pericardial-fibroblasts" class="section level3">
+<h3>Subset Pericardial Fibroblasts</h3>
+<p>Subset Pericardial Fibroblasts <a
+href="6_Subset-FBs.html">link</a></p>
+</div>
+<div id="pericardial-fibroblasts-tcrm-and-ctrl" class="section level3">
+<h3>Pericardial Fibroblasts TCRM and Ctrl</h3>
+<p>Pericardial Fibroblasts TCRM and Ctrl <a
+href="7_characterize-FBs.html">link</a></p>
+</div>
+<div id="pericardial-falc-frcs-tcrm-and-ctrl" class="section level3">
+<h3>Pericardial FALC FRCs TCRM and Ctrl</h3>
+<p>Pericardial FALC FRCs TCRM and Ctrl <a
+href="8_FRC-Ctrl-vs-TCRM.html">link</a></p>
+</div>
+<div id="il6-signaling-in-pericardial-fibroblasts"
+class="section level3">
+<h3>IL6 Signaling in Pericardial Fibroblasts</h3>
+<p>IL6 Signaling in Pericardial Fibroblasts <a
+href="9_IL6-FBs.html">link</a></p>
+</div>
+</div>
+<div id="pericardial-t-cells" class="section level2">
+<h2>Pericardial T cells</h2>
+<div id="subset-pericardial-t-cells" class="section level3">
+<h3>Subset Pericardial T cells</h3>
+<p>Subset Pericardial T Cells <a
+href="10_subset-T-cells.html">link</a></p>
+</div>
+<div id="pericardial-t-cells-tcrm-and-ctrl" class="section level3">
+<h3>Pericardial T cells TCRM and Ctrl</h3>
+<p>Pericardial T Cells TCRM and Ctrl <a
+href="11_characterize-T-cells.html">link</a></p>
+</div>
+</div>
+<div id="interaction-analysis" class="section level2">
+<h2>Interaction Analysis</h2>
+<div id="cellchat-pericardial-cells" class="section level3">
+<h3>CellChat Pericardial Cells</h3>
+<p>CellChat Pericardial Cells <a
+href="12_cellchat-TCRM-vs-Ctrl.html">link</a></p>
+</div>
+<div id="cellchat-t-cells-and-fibroblasts" class="section level3">
+<h3>Cellchat T cells and Fibroblasts</h3>
+<p>Cellchat T cells and Fibroblasts <a
+href="13_cellchat-T-FB-merge.html">link</a></p>
+</div>
+</div>
 
 
 <!-- Adjust MathJax settings so that all math formulae are shown using

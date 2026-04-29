@@ -11,9 +11,9 @@
 
 <meta name="author" content="Nadine" />
 
-<meta name="date" content="2025-07-14" />
+<meta name="date" content="2026-04-17" />
 
-<title>12_cellchat TCRM vs Ctrl</title>
+<title>CellChat Pericardial Cells</title>
 
 <script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -351,9 +351,9 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">12_cellchat TCRM vs Ctrl</h1>
+<h1 class="title toc-ignore">CellChat Pericardial Cells</h1>
 <h4 class="author">Nadine</h4>
-<h4 class="date">2025-07-14</h4>
+<h4 class="date">2026-04-17</h4>
 
 </div>
 
@@ -382,7 +382,7 @@ aria-hidden="true"></span> </a>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-12-05
+<strong>Last updated:</strong> 2026-04-29
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -560,6 +560,7 @@ Untracked files:
     Untracked:  analysis/11_characterize T cells.Rmd
     Untracked:  analysis/12_cellchat TCRM vs Ctrl.Rmd
     Untracked:  analysis/12_cellchat-TCRM-vs-Ctrl.Rmd
+    Untracked:  analysis/13_T cell FRC merge.Rmd
     Untracked:  analysis/1_merge samples.Rmd
     Untracked:  analysis/2_assign metadata.Rmd
     Untracked:  analysis/3_data cleanup.Rmd
@@ -568,12 +569,12 @@ Untracked files:
     Untracked:  analysis/6_Subset FBs.Rmd
     Untracked:  analysis/7_characterize FBs.Rmd
     Untracked:  analysis/8_FRC Ctrl vs TCRM.Rmd
-    Untracked:  analysis/9_IL6 Ccl19 FRCs.Rmd
-    Untracked:  analysis/figure/
+    Untracked:  analysis/9_IL6 FBs.Rmd
 
 Unstaged changes:
     Modified:   .DS_Store
     Modified:   .gitignore
+    Modified:   analysis/index.Rmd
 
 </code></pre>
 <p>
@@ -596,84 +597,56 @@ There are no past versions. Publish this analysis with
 </div>
 </div>
 </div>
-<p>#load packages</p>
+<div id="load-packages" class="section level1">
+<h1>Load packages</h1>
 <pre class="r"><code>suppressPackageStartupMessages({
-  library(ExploreSCdataSeurat3)
-  library(runSeurat3)
   library(Seurat)
-  library(ggpubr)
-  library(pheatmap)
   library(SingleCellExperiment)
-  library(dplyr)
-  library(tidyverse)
-  library(viridis)
-  library(muscat)
-  library(circlize)
-  library(destiny)
-  library(scater)
-  library(metap)
-  library(multtest)
-  library(clusterProfiler)
-  library(org.Mm.eg.db)
-  library(msigdbr)
-  library(enrichplot)
-  library(DOSE)
-  library(grid)
-  library(gridExtra)
-  library(ggupset)
-  library(VennDiagram)
-  library(reshape2)
-  library(ggplot2)
-  library(cowplot)
-  library(purrr)
   library(here)
-  library(ggsci)
-  library(RColorBrewer)
   library(CellChat)
-  library(patchwork)
-  library(NMF)
-  library(circlize)
-  library(ComplexHeatmap)
-  library(BiocGenerics)
-  library(BiocNeighbors)
-  library(SeuratObject)
 })</code></pre>
-<p>#load seurat object</p>
-<pre class="r"><code>#Load full dataset seurat object from previous analysis
+</div>
+<div id="load-seurat-object" class="section level1">
+<h1>Load seurat object</h1>
+<pre class="r"><code># Load merged and cleaned object containing FBs
 basedir&lt;- here()
 fileNam &lt;- paste0(basedir, &quot;/data/pericarditis_allmerged_cleaned_cL_seurat.rds&quot;)
 seuratM &lt;- readRDS(fileNam)</code></pre>
-<p>#Set color palette for clusters</p>
-<pre class="r"><code>colPal &lt;- c( &quot;#CDC1C5&quot;,&quot;#8B7B8B&quot;,&quot;#CDC673&quot;,&quot;#CD5B45&quot;,&quot;#C1CDC1&quot;,&quot;#7AC5CD&quot;,&quot;#7F7F7F&quot;,&quot;#4A708B&quot;,&quot;#CD919E&quot;,&quot;#8B668B&quot;,&quot;#8B475D&quot;,&quot;#8FBC8F&quot;,&quot;#CCCCCC&quot;,&quot;#8B7D6B&quot;,&quot;#CDC8B1&quot;,&quot;#333333&quot;)
+</div>
+<div id="define-color-palette" class="section level1">
+<h1>Define color palette</h1>
+<pre class="r"><code># Color palette clusterLabel
+colPal &lt;- c( &quot;#CDC1C5&quot;,&quot;#8B7B8B&quot;,&quot;#CDC673&quot;,&quot;#CD5B45&quot;,&quot;#C1CDC1&quot;,&quot;#7AC5CD&quot;,&quot;#7F7F7F&quot;,&quot;#4A708B&quot;,&quot;#CD919E&quot;,&quot;#8B668B&quot;,&quot;#8B475D&quot;,&quot;#8FBC8F&quot;,&quot;#CCCCCC&quot;,&quot;#8B7D6B&quot;,&quot;#CDC8B1&quot;,&quot;#333333&quot;)
 
-names(colPal) &lt;- c(&quot;B2 Bcells&quot;,&quot;B1 Bcells&quot;, &quot;Cycling cells&quot;,&quot;Plasma cells&quot;, &quot;Tcells&quot;, &quot;ILCs&quot;, &quot;gdTcells&quot;,  &quot;NKcells&quot;, &quot;Mono/Mphs&quot;, &quot;Neutrophils&quot;, &quot;DCs&quot;, &quot;Fibroblasts-1&quot;, &quot;Fibroblasts-2&quot;, &quot;Cover cells&quot;,&quot;Mesothelial cells&quot;, &quot;Adipocytes&quot;) 
-
-colPal_Phenotype &lt;- c(&quot;#8B0000&quot;, &quot;#CD4F39&quot;, &quot;#FCDACB&quot;, &quot;#E6E6E6&quot;)
-names(colPal_Phenotype) &lt;- c(&quot;DCM&quot;, &quot;iCMP&quot;, &quot;inflamed&quot;, &quot;healthy&quot;)</code></pre>
-<p>#Set order of clusterLabel</p>
+names(colPal) &lt;- c(&quot;B2 Bcells&quot;,&quot;B1 Bcells&quot;, &quot;Cycling cells&quot;,&quot;Plasma cells&quot;, &quot;Tcells&quot;, &quot;ILCs&quot;, &quot;gdTcells&quot;,  &quot;NKcells&quot;, &quot;Mono/Mphs&quot;, &quot;Neutrophils&quot;, &quot;DCs&quot;, &quot;Fibroblasts-1&quot;, &quot;Fibroblasts-2&quot;, &quot;Cover cells&quot;,&quot;Mesothelial cells&quot;, &quot;Adipocytes&quot;) </code></pre>
+</div>
+<div id="set-order-of-clusterlabel" class="section level1">
+<h1>Set order of clusterLabel</h1>
 <pre class="r"><code>order &lt;- c(&quot;B2 Bcells&quot;,&quot;B1 Bcells&quot;, &quot;Cycling cells&quot;,&quot;Plasma cells&quot;, &quot;Tcells&quot;, &quot;ILCs&quot;, &quot;gdTcells&quot;,  &quot;NKcells&quot;, &quot;Mono/Mphs&quot;, &quot;Neutrophils&quot;, &quot;DCs&quot;, &quot;Fibroblasts-1&quot;, &quot;Fibroblasts-2&quot;, &quot;Cover cells&quot;,&quot;Mesothelial cells&quot;, &quot;Adipocytes&quot;) 
 
 seuratM$clusterLabel &lt;- factor(seuratM$clusterLabel, levels = order)</code></pre>
-<p>#Run cellchat for LMC</p>
-<pre class="r"><code>#Subset for Controls
+</div>
+<div id="run-cellchat-for-ctrl" class="section level1">
+<h1>Run CellChat for Ctrl</h1>
+<pre class="r"><code># Subset Controls
 seurat_LMC &lt;- subset(seuratM, cond %in% &quot;LMC&quot;)
 sce_LMC &lt;- as.SingleCellExperiment(seurat_LMC)
 rownames(sce_LMC) = gsub(&quot;^.*\\.&quot;,&quot;&quot;,rownames(sce_LMC))
 
-#Create cellchat object
+# Create CellChat object
 cellchat_LMC &lt;- createCellChat(object = sce_LMC, group.by = &quot;clusterLabel&quot;)
 
-#Select database
+# Select database
 CellChatDB &lt;- CellChatDB.mouse
 CellChatDB.use &lt;- CellChatDB
 cellchat_LMC@DB &lt;- CellChatDB.use
 
-#Run analysis
+# Run analysis
 cellchat_LMC &lt;- subsetData(cellchat_LMC)
 cellchat_LMC &lt;- identifyOverExpressedGenes(cellchat_LMC)
 cellchat_LMC &lt;- identifyOverExpressedInteractions(cellchat_LMC)
 
-#Filter
+# Filter
 options(future.globals.maxSize = 8000 * 1024^2) #necessary if limit too small
 cellchat_LMC &lt;- filterCommunication(cellchat_LMC, min.cells = 5)
 cellchat_LMC &lt;- computeCommunProb(cellchat_LMC, type =  &quot;truncatedMean&quot;, trim = 0.2, population.size = FALSE)
@@ -684,29 +657,33 @@ cellchat_LMC &lt;- aggregateNet(cellchat_LMC)
 
 future.seed=TRUE
 cellchat_LMC &lt;- netAnalysis_computeCentrality(cellchat_LMC, slot.name = &quot;netP&quot;) </code></pre>
-<p>#Save cellchat LMC</p>
+</div>
+<div id="save-cellchat-ctrl" class="section level1">
+<h1>Save CellChat Ctrl</h1>
 <pre class="r"><code>basedir &lt;- here()
 saveRDS(cellchat_LMC, file = paste0(basedir, &quot;/data/pericarditis_allmerged_cleaned_cellchat_LMC.rds&quot;))</code></pre>
-<p>#Run cellchat for TCRM</p>
-<pre class="r"><code>#Subset for Controls
+</div>
+<div id="run-cellchat-for-tcrm" class="section level1">
+<h1>Run CellChat for TCRM</h1>
+<pre class="r"><code># Subset TCRM
 seurat_TCRM &lt;- subset(seuratM, cond %in% &quot;TCRM&quot;)
 sce_TCRM &lt;- as.SingleCellExperiment(seurat_TCRM)
 rownames(sce_TCRM) = gsub(&quot;^.*\\.&quot;,&quot;&quot;,rownames(sce_TCRM))
 
-#Create cellchat object
+# Create CellChat object
 cellchat_TCRM &lt;- createCellChat(object = sce_TCRM, group.by = &quot;clusterLabel&quot;)
 
-#Select database
+# Select database
 CellChatDB &lt;- CellChatDB.mouse
 CellChatDB.use &lt;- CellChatDB
 cellchat_TCRM@DB &lt;- CellChatDB.use
 
-#Run analysis
+# Run analysis
 cellchat_TCRM &lt;- subsetData(cellchat_TCRM)
 cellchat_TCRM &lt;- identifyOverExpressedGenes(cellchat_TCRM)
 cellchat_TCRM &lt;- identifyOverExpressedInteractions(cellchat_TCRM)
 
-#Filter
+# Filter
 options(future.globals.maxSize = 8000 * 1024^2) #necessary if limit too small
 cellchat_TCRM &lt;- filterCommunication(cellchat_TCRM, min.cells = 5)
 cellchat_TCRM &lt;- computeCommunProb(cellchat_TCRM, type =  &quot;truncatedMean&quot;, trim = 0.2, population.size = FALSE)
@@ -717,35 +694,17 @@ cellchat_TCRM &lt;- aggregateNet(cellchat_TCRM)
 
 future.seed=TRUE
 cellchat_TCRM &lt;- netAnalysis_computeCentrality(cellchat_TCRM, slot.name = &quot;netP&quot;) </code></pre>
-<p>#Save cellchat TCRM</p>
+</div>
+<div id="save-cellchat-tcrm" class="section level1">
+<h1>Save CellChat TCRM</h1>
 <pre class="r"><code>basedir &lt;- here()
 saveRDS(cellchat_TCRM, file = paste0(basedir, &quot;/data/pericarditis_allmerged_cleaned_cellchat_TCRM.rds&quot;))</code></pre>
-<p>#Load cellchat files</p>
-<pre class="r"><code>basedir&lt;- here()
-fileNam &lt;- paste0(basedir, &quot;/data/pericarditis_allmerged_cleaned_cellchat_LMC.rds&quot;)
-cellchat_LMC &lt;- readRDS(fileNam)
-
-
-basedir&lt;- here()
-fileNam &lt;- paste0(basedir, &quot;/data/pericarditis_allmerged_cleaned_cellchat_TCRM.rds&quot;)
-cellchat_TCRM &lt;- readRDS(fileNam)</code></pre>
+</div>
 <div id="interaction-analysis-of-il6-across-conditions"
 class="section level1">
 <h1>Interaction analysis of IL6 across conditions</h1>
 <div id="lmc" class="section level2">
 <h2>LMC</h2>
-<div id="calculate-the-aggregated-cell-cell-communication-network"
-class="section level3">
-<h3>Calculate the aggregated cell-cell communication network</h3>
-<pre class="r"><code>#Signaling role analysis on the aggregated cell-cell communication network from all signaling pathways
-gg1 &lt;- netAnalysis_signalingRole_scatter(cellchat_LMC, color.use = colPal)
-gg1</code></pre>
-<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-</div>
 <div id="heatmap-of-sender-receiver-selected-pathways"
 class="section level3">
 <h3>Heatmap of sender/ receiver (selected pathways)</h3>
@@ -769,7 +728,7 @@ for (pathway in pathways.show) {
     color.heatmap = &quot;Greys&quot;
   )
 }</code></pre>
-<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" />
+<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
@@ -791,22 +750,15 @@ for (pathway in pathways.show) {
     title.name = pathway
   )
 }</code></pre>
-<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>##TCRM ### Calculate the aggregated cell-cell communication
-network</p>
-<pre class="r"><code># Signaling role analysis on the aggregated cell-cell communication network from all signaling pathways
-gg1 &lt;- netAnalysis_signalingRole_scatter(cellchat_TCRM, color.use = colPal)
-gg1</code></pre>
-<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" />
+<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
 </div>
+</div>
+<div id="tcrm" class="section level2">
+<h2>TCRM</h2>
 <div id="heatmap-of-sender-receiver-selected-pathways-1"
 class="section level3">
 <h3>Heatmap of sender/ receiver (selected pathways)</h3>
@@ -830,7 +782,7 @@ for (pathway in pathways.show) {
     color.heatmap = &quot;Reds&quot;
   )
 }</code></pre>
-<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" />
+<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
@@ -852,11 +804,102 @@ for (pathway in pathways.show) {
     title.name = pathway
   )
 }</code></pre>
-<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" />
+<img src="figure/12_cellchat%20TCRM%20vs%20Ctrl.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
+</div>
+</div>
+</div>
+<div id="session-info" class="section level1">
+<h1>Session info</h1>
+<pre class="r"><code>sessionInfo()</code></pre>
+<pre><code>R version 4.4.0 (2024-04-24)
+Platform: x86_64-apple-darwin20
+Running under: macOS Sonoma 14.3.1
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRblas.0.dylib 
+LAPACK: /Library/Frameworks/R.framework/Versions/4.4-x86_64/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.0
+
+locale:
+[1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+
+time zone: Europe/Zurich
+tzcode source: internal
+
+attached base packages:
+[1] stats4    stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] future_1.58.0               CellChat_1.6.1             
+ [3] ggplot2_3.5.2               igraph_2.1.4               
+ [5] dplyr_1.1.4                 here_1.0.1                 
+ [7] SingleCellExperiment_1.26.0 SummarizedExperiment_1.34.0
+ [9] Biobase_2.64.0              GenomicRanges_1.56.2       
+[11] GenomeInfoDb_1.40.1         IRanges_2.38.1             
+[13] S4Vectors_0.42.1            BiocGenerics_0.50.0        
+[15] MatrixGenerics_1.16.0       matrixStats_1.5.0          
+[17] Seurat_5.3.0                SeuratObject_5.1.0         
+[19] sp_2.2-0                   
+
+loaded via a namespace (and not attached):
+  [1] RcppAnnoy_0.0.22        splines_4.4.0           later_1.4.2            
+  [4] tibble_3.3.0            polyclip_1.10-7         ggnetwork_0.5.13       
+  [7] fastDummies_1.7.5       lifecycle_1.0.4         rstatix_0.7.2          
+ [10] doParallel_1.0.17       rprojroot_2.1.0         globals_0.18.0         
+ [13] lattice_0.22-7          MASS_7.3-65             backports_1.5.0        
+ [16] magrittr_2.0.3          plotly_4.11.0           sass_0.4.10            
+ [19] rmarkdown_2.29          jquerylib_0.1.4         yaml_2.3.10            
+ [22] httpuv_1.6.16           NMF_0.28                sctransform_0.4.2      
+ [25] spam_2.11-1             spatstat.sparse_3.1-0   reticulate_1.43.0      
+ [28] cowplot_1.2.0           pbapply_1.7-4           RColorBrewer_1.1-3     
+ [31] abind_1.4-8             zlibbioc_1.50.0         Rtsne_0.17             
+ [34] purrr_1.1.0             git2r_0.36.2            circlize_0.4.16        
+ [37] GenomeInfoDbData_1.2.12 ggrepel_0.9.6           irlba_2.3.5.1          
+ [40] listenv_0.9.1           spatstat.utils_3.1-5    goftest_1.2-3          
+ [43] RSpectra_0.16-2         spatstat.random_3.4-1   fitdistrplus_1.2-4     
+ [46] parallelly_1.45.1       svglite_2.2.1           codetools_0.2-20       
+ [49] DelayedArray_0.30.1     tidyselect_1.2.1        shape_1.4.6.1          
+ [52] UCSC.utils_1.0.0        farver_2.1.2            spatstat.explore_3.5-2 
+ [55] jsonlite_2.0.0          GetoptLong_1.0.5        BiocNeighbors_1.22.0   
+ [58] Formula_1.2-5           progressr_0.15.1        ggridges_0.5.6         
+ [61] ggalluvial_0.12.5       survival_3.8-3          iterators_1.0.14       
+ [64] systemfonts_1.2.3       foreach_1.5.2           tools_4.4.0            
+ [67] sna_2.8                 ica_1.0-3               Rcpp_1.1.0             
+ [70] glue_1.8.0              gridExtra_2.3           SparseArray_1.4.8      
+ [73] xfun_0.52               withr_3.0.2             BiocManager_1.30.26    
+ [76] fastmap_1.2.0           digest_0.6.37           R6_2.6.1               
+ [79] mime_0.13               textshaping_1.0.1       colorspace_2.1-1       
+ [82] Cairo_1.6-5             scattermore_1.2         tensor_1.5.1           
+ [85] spatstat.data_3.1-6     tidyr_1.3.1             generics_0.1.4         
+ [88] data.table_1.17.8       FNN_1.1.4.1             httr_1.4.7             
+ [91] htmlwidgets_1.6.4       S4Arrays_1.4.1          uwot_0.2.3             
+ [94] pkgconfig_2.0.3         gtable_0.3.6            registry_0.5-1         
+ [97] workflowr_1.7.1         ComplexHeatmap_2.20.0   lmtest_0.9-40          
+[100] XVector_0.44.0          htmltools_0.5.8.1       carData_3.0-5          
+[103] dotCall64_1.2           clue_0.3-66             scales_1.4.0           
+[106] png_0.1-8               spatstat.univar_3.1-4   knitr_1.50             
+[109] rstudioapi_0.17.1       reshape2_1.4.4          rjson_0.2.23           
+[112] coda_0.19-4.1           statnet.common_4.12.0   nlme_3.1-168           
+[115] cachem_1.1.0            zoo_1.8-14              GlobalOptions_0.1.2    
+[118] stringr_1.5.1           KernSmooth_2.23-26      parallel_4.4.0         
+[121] miniUI_0.1.2            pillar_1.11.0           grid_4.4.0             
+[124] vctrs_0.6.5             RANN_2.6.2              ggpubr_0.6.1           
+[127] promises_1.3.3          car_3.1-3               xtable_1.8-4           
+[130] cluster_2.1.8.1         evaluate_1.0.4          magick_2.9.0           
+[133] cli_3.6.5               compiler_4.4.0          rlang_1.1.6            
+[136] crayon_1.5.3            rngtools_1.5.2          ggsignif_0.6.4         
+[139] future.apply_1.20.0     plyr_1.8.9              fs_1.6.6               
+[142] stringi_1.8.7           network_1.19.0          viridisLite_0.4.2      
+[145] deldir_2.0-4            gridBase_0.4-7          BiocParallel_1.38.0    
+[148] lazyeval_0.2.2          spatstat.geom_3.5-0     Matrix_1.7-3           
+[151] RcppHNSW_0.6.0          patchwork_1.3.1         shiny_1.11.1           
+[154] ROCR_1.0-11             broom_1.0.8             bslib_0.9.0            </code></pre>
+<pre class="r"><code>date()</code></pre>
+<pre><code>[1] &quot;Wed Apr 29 14:09:04 2026&quot;</code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -881,173 +924,74 @@ time zone: Europe/Zurich
 tzcode source: internal
 
 attached base packages:
-[1] grid      stats4    stats     graphics  grDevices utils     datasets 
-[8] methods   base     
+[1] stats4    stats     graphics  grDevices utils     datasets  methods  
+[8] base     
 
 other attached packages:
- [1] future_1.58.0               BiocNeighbors_1.22.0       
- [3] ComplexHeatmap_2.20.0       NMF_0.28                   
- [5] cluster_2.1.8.1             rngtools_1.5.2             
- [7] registry_0.5-1              patchwork_1.3.1            
- [9] CellChat_1.6.1              igraph_2.1.4               
-[11] RColorBrewer_1.1-3          ggsci_3.2.0                
-[13] here_1.0.1                  cowplot_1.2.0              
-[15] reshape2_1.4.4              VennDiagram_1.7.3          
-[17] futile.logger_1.4.3         ggupset_0.4.1              
-[19] gridExtra_2.3               DOSE_3.30.5                
-[21] enrichplot_1.24.4           msigdbr_25.1.1             
-[23] org.Mm.eg.db_3.19.1         AnnotationDbi_1.66.0       
-[25] clusterProfiler_4.12.6      multtest_2.60.0            
-[27] metap_1.12                  scater_1.32.1              
-[29] scuttle_1.14.0              destiny_3.18.0             
-[31] circlize_0.4.16             muscat_1.18.0              
-[33] viridis_0.6.5               viridisLite_0.4.2          
-[35] lubridate_1.9.4             forcats_1.0.0              
-[37] stringr_1.5.1               purrr_1.1.0                
-[39] readr_2.1.5                 tidyr_1.3.1                
-[41] tibble_3.3.0                tidyverse_2.0.0            
-[43] dplyr_1.1.4                 SingleCellExperiment_1.26.0
-[45] SummarizedExperiment_1.34.0 Biobase_2.64.0             
-[47] GenomicRanges_1.56.2        GenomeInfoDb_1.40.1        
-[49] IRanges_2.38.1              S4Vectors_0.42.1           
-[51] BiocGenerics_0.50.0         MatrixGenerics_1.16.0      
-[53] matrixStats_1.5.0           pheatmap_1.0.13            
-[55] ggpubr_0.6.1                ggplot2_3.5.2              
-[57] Seurat_5.3.0                SeuratObject_5.1.0         
-[59] sp_2.2-0                    runSeurat3_0.1.0           
-[61] ExploreSCdataSeurat3_0.1.0 
+ [1] future_1.58.0               CellChat_1.6.1             
+ [3] ggplot2_3.5.2               igraph_2.1.4               
+ [5] dplyr_1.1.4                 here_1.0.1                 
+ [7] SingleCellExperiment_1.26.0 SummarizedExperiment_1.34.0
+ [9] Biobase_2.64.0              GenomicRanges_1.56.2       
+[11] GenomeInfoDb_1.40.1         IRanges_2.38.1             
+[13] S4Vectors_0.42.1            BiocGenerics_0.50.0        
+[15] MatrixGenerics_1.16.0       matrixStats_1.5.0          
+[17] Seurat_5.3.0                SeuratObject_5.1.0         
+[19] sp_2.2-0                   
 
 loaded via a namespace (and not attached):
-  [1] ica_1.0-3                 plotly_4.11.0            
-  [3] Formula_1.2-5             zlibbioc_1.50.0          
-  [5] tidyselect_1.2.1          bit_4.6.0                
-  [7] doParallel_1.0.17         clue_0.3-66              
-  [9] lattice_0.22-7            rjson_0.2.23             
- [11] blob_1.2.4                S4Arrays_1.4.1           
- [13] pbkrtest_0.5.5            parallel_4.4.0           
- [15] png_0.1-8                 plotrix_3.8-4            
- [17] cli_3.6.5                 ggplotify_0.1.2          
- [19] goftest_1.2-3             VIM_6.2.2                
- [21] variancePartition_1.34.0  textshaping_1.0.1        
- [23] ggnetwork_0.5.13          shadowtext_0.1.5         
- [25] uwot_0.2.3                curl_6.4.0               
- [27] tidytree_0.4.6            mime_0.13                
- [29] evaluate_1.0.4            stringi_1.8.7            
- [31] backports_1.5.0           lmerTest_3.1-3           
- [33] qqconf_1.3.2              httpuv_1.6.16            
- [35] magrittr_2.0.3            rappdirs_0.3.3           
- [37] splines_4.4.0             ggraph_2.2.1             
- [39] sctransform_0.4.2         ggbeeswarm_0.7.2         
- [41] DBI_1.2.3                 jquerylib_0.1.4          
- [43] smoother_1.3              withr_3.0.2              
- [45] git2r_0.36.2              corpcor_1.6.10           
- [47] systemfonts_1.2.3         reformulas_0.4.1         
- [49] class_7.3-23              rprojroot_2.1.0          
- [51] lmtest_0.9-40             tidygraph_1.3.1          
- [53] BiocManager_1.30.26       formatR_1.14             
- [55] colourpicker_1.3.0        htmlwidgets_1.6.4        
- [57] fs_1.6.6                  ggrepel_0.9.6            
- [59] statnet.common_4.12.0     labeling_0.4.3           
- [61] fANCOVA_0.6-1             SparseArray_1.4.8        
- [63] DESeq2_1.44.0             ranger_0.17.0            
- [65] DEoptimR_1.1-3-1          reticulate_1.43.0        
- [67] hexbin_1.28.5             zoo_1.8-14               
- [69] XVector_0.44.0            knitr_1.50               
- [71] network_1.19.0            ggplot.multistats_1.0.1  
- [73] UCSC.utils_1.0.0          RhpcBLASctl_0.23-42      
- [75] timechange_0.3.0          foreach_1.5.2            
- [77] caTools_1.18.3            data.table_1.17.8        
- [79] ggtree_3.12.0             R.oo_1.27.1              
- [81] RSpectra_0.16-2           irlba_2.3.5.1            
- [83] fastDummies_1.7.5         gridGraphics_0.5-1       
- [85] lazyeval_0.2.2            yaml_2.3.10              
- [87] survival_3.8-3            scattermore_1.2          
- [89] crayon_1.5.3              RcppAnnoy_0.0.22         
- [91] progressr_0.15.1          tweenr_2.0.3             
- [93] later_1.4.2               ggridges_0.5.6           
- [95] codetools_0.2-20          GlobalOptions_0.1.2      
- [97] aod_1.3.3                 KEGGREST_1.44.1          
- [99] Rtsne_0.17                shape_1.4.6.1            
-[101] limma_3.60.6              pkgconfig_2.0.3          
-[103] TMB_1.9.17                spatstat.univar_3.1-4    
-[105] mathjaxr_1.8-0            EnvStats_3.1.0           
-[107] aplot_0.2.8               scatterplot3d_0.3-44     
-[109] gridBase_0.4-7            ape_5.8-1                
-[111] spatstat.sparse_3.1-0     xtable_1.8-4             
-[113] car_3.1-3                 plyr_1.8.9               
-[115] httr_1.4.7                rbibutils_2.3            
-[117] tools_4.4.0               globals_0.18.0           
-[119] beeswarm_0.4.0            broom_1.0.8              
-[121] nlme_3.1-168              lambda.r_1.2.4           
-[123] assertthat_0.2.1          lme4_1.1-37              
-[125] digest_0.6.37             numDeriv_2016.8-1.1      
-[127] Matrix_1.7-3              farver_2.1.2             
-[129] tzdb_0.5.0                remaCor_0.0.18           
-[131] yulab.utils_0.2.0         glue_1.8.0               
-[133] cachem_1.1.0              polyclip_1.10-7          
-[135] generics_0.1.4            Biostrings_2.72.1        
-[137] ggalluvial_0.12.5         mvtnorm_1.3-3            
-[139] parallelly_1.45.1         mnormt_2.1.1             
-[141] statmod_1.5.0             RcppHNSW_0.6.0           
-[143] ScaledMatrix_1.12.0       carData_3.0-5            
-[145] minqa_1.2.8               pbapply_1.7-4            
-[147] httr2_1.2.1               spam_2.11-1              
-[149] gson_0.1.0                graphlayouts_1.2.2       
-[151] gtools_3.9.5              ggsignif_0.6.4           
-[153] RcppEigen_0.3.4.0.2       shiny_1.11.1             
-[155] GenomeInfoDbData_1.2.12   glmmTMB_1.1.11           
-[157] R.utils_2.13.0            memoise_2.0.1            
-[159] rmarkdown_2.29            scales_1.4.0             
-[161] R.methodsS3_1.8.2         svglite_2.2.1            
-[163] RANN_2.6.2                Cairo_1.6-5              
-[165] spatstat.data_3.1-6       rstudioapi_0.17.1        
-[167] mutoss_0.1-13             spatstat.utils_3.1-5     
-[169] hms_1.1.3                 fitdistrplus_1.2-4       
-[171] colorspace_2.1-1          FNN_1.1.4.1              
-[173] rlang_1.1.6               DelayedMatrixStats_1.26.0
-[175] sparseMatrixStats_1.16.0  xts_0.14.1               
-[177] dotCall64_1.2             shinydashboard_0.7.3     
-[179] ggforce_0.5.0             laeken_0.5.3             
-[181] mgcv_1.9-3                xfun_0.52                
-[183] coda_0.19-4.1             sna_2.8                  
-[185] e1071_1.7-16              TH.data_1.1-3            
-[187] iterators_1.0.14          abind_1.4-8              
-[189] GOSemSim_2.30.2           treeio_1.28.0            
-[191] futile.options_1.0.1      bitops_1.0-9             
-[193] Rdpack_2.6.4              promises_1.3.3           
-[195] scatterpie_0.2.5          RSQLite_2.4.2            
-[197] qvalue_2.36.0             sandwich_3.1-1           
-[199] fgsea_1.30.0              DelayedArray_0.30.1      
-[201] proxy_0.4-27              GO.db_3.19.1             
-[203] compiler_4.4.0            prettyunits_1.2.0        
-[205] boot_1.3-31               beachmat_2.20.0          
-[207] listenv_0.9.1             Rcpp_1.1.0               
-[209] edgeR_4.2.2               workflowr_1.7.1          
-[211] BiocSingular_1.20.0       tensor_1.5.1             
-[213] MASS_7.3-65               progress_1.2.3           
-[215] BiocParallel_1.38.0       babelgene_22.9           
-[217] spatstat.random_3.4-1     R6_2.6.1                 
-[219] fastmap_1.2.0             multcomp_1.4-28          
-[221] fastmatch_1.1-6           rstatix_0.7.2            
-[223] vipor_0.4.7               TTR_0.24.4               
-[225] ROCR_1.0-11               TFisher_0.2.0            
-[227] rsvd_1.0.5                vcd_1.4-13               
-[229] nnet_7.3-20               gtable_0.3.6             
-[231] KernSmooth_2.23-26        miniUI_0.1.2             
-[233] deldir_2.0-4              htmltools_0.5.8.1        
-[235] ggthemes_5.1.0            bit64_4.6.0-1            
-[237] spatstat.explore_3.5-2    lifecycle_1.0.4          
-[239] blme_1.0-6                S7_0.2.0                 
-[241] nloptr_2.2.1              sass_0.4.10              
-[243] vctrs_0.6.5               robustbase_0.99-4-1      
-[245] spatstat.geom_3.5-0       sn_2.1.1                 
-[247] ggfun_0.2.0               future.apply_1.20.0      
-[249] bslib_0.9.0               pillar_1.11.0            
-[251] magick_2.9.0              gplots_3.2.0             
-[253] pcaMethods_1.96.0         locfit_1.5-9.12          
-[255] jsonlite_2.0.0            GetoptLong_1.0.5         </code></pre>
-</div>
-</div>
+  [1] RcppAnnoy_0.0.22        splines_4.4.0           later_1.4.2            
+  [4] tibble_3.3.0            polyclip_1.10-7         ggnetwork_0.5.13       
+  [7] fastDummies_1.7.5       lifecycle_1.0.4         rstatix_0.7.2          
+ [10] doParallel_1.0.17       rprojroot_2.1.0         globals_0.18.0         
+ [13] lattice_0.22-7          MASS_7.3-65             backports_1.5.0        
+ [16] magrittr_2.0.3          plotly_4.11.0           sass_0.4.10            
+ [19] rmarkdown_2.29          jquerylib_0.1.4         yaml_2.3.10            
+ [22] httpuv_1.6.16           NMF_0.28                sctransform_0.4.2      
+ [25] spam_2.11-1             spatstat.sparse_3.1-0   reticulate_1.43.0      
+ [28] cowplot_1.2.0           pbapply_1.7-4           RColorBrewer_1.1-3     
+ [31] abind_1.4-8             zlibbioc_1.50.0         Rtsne_0.17             
+ [34] purrr_1.1.0             git2r_0.36.2            circlize_0.4.16        
+ [37] GenomeInfoDbData_1.2.12 ggrepel_0.9.6           irlba_2.3.5.1          
+ [40] listenv_0.9.1           spatstat.utils_3.1-5    goftest_1.2-3          
+ [43] RSpectra_0.16-2         spatstat.random_3.4-1   fitdistrplus_1.2-4     
+ [46] parallelly_1.45.1       svglite_2.2.1           codetools_0.2-20       
+ [49] DelayedArray_0.30.1     tidyselect_1.2.1        shape_1.4.6.1          
+ [52] UCSC.utils_1.0.0        farver_2.1.2            spatstat.explore_3.5-2 
+ [55] jsonlite_2.0.0          GetoptLong_1.0.5        BiocNeighbors_1.22.0   
+ [58] Formula_1.2-5           progressr_0.15.1        ggridges_0.5.6         
+ [61] ggalluvial_0.12.5       survival_3.8-3          iterators_1.0.14       
+ [64] systemfonts_1.2.3       foreach_1.5.2           tools_4.4.0            
+ [67] sna_2.8                 ica_1.0-3               Rcpp_1.1.0             
+ [70] glue_1.8.0              gridExtra_2.3           SparseArray_1.4.8      
+ [73] xfun_0.52               withr_3.0.2             BiocManager_1.30.26    
+ [76] fastmap_1.2.0           digest_0.6.37           R6_2.6.1               
+ [79] mime_0.13               textshaping_1.0.1       colorspace_2.1-1       
+ [82] Cairo_1.6-5             scattermore_1.2         tensor_1.5.1           
+ [85] spatstat.data_3.1-6     tidyr_1.3.1             generics_0.1.4         
+ [88] data.table_1.17.8       FNN_1.1.4.1             httr_1.4.7             
+ [91] htmlwidgets_1.6.4       S4Arrays_1.4.1          uwot_0.2.3             
+ [94] pkgconfig_2.0.3         gtable_0.3.6            registry_0.5-1         
+ [97] workflowr_1.7.1         ComplexHeatmap_2.20.0   lmtest_0.9-40          
+[100] XVector_0.44.0          htmltools_0.5.8.1       carData_3.0-5          
+[103] dotCall64_1.2           clue_0.3-66             scales_1.4.0           
+[106] png_0.1-8               spatstat.univar_3.1-4   knitr_1.50             
+[109] rstudioapi_0.17.1       reshape2_1.4.4          rjson_0.2.23           
+[112] coda_0.19-4.1           statnet.common_4.12.0   nlme_3.1-168           
+[115] cachem_1.1.0            zoo_1.8-14              GlobalOptions_0.1.2    
+[118] stringr_1.5.1           KernSmooth_2.23-26      parallel_4.4.0         
+[121] miniUI_0.1.2            pillar_1.11.0           grid_4.4.0             
+[124] vctrs_0.6.5             RANN_2.6.2              ggpubr_0.6.1           
+[127] promises_1.3.3          car_3.1-3               xtable_1.8-4           
+[130] cluster_2.1.8.1         evaluate_1.0.4          magick_2.9.0           
+[133] cli_3.6.5               compiler_4.4.0          rlang_1.1.6            
+[136] crayon_1.5.3            rngtools_1.5.2          ggsignif_0.6.4         
+[139] future.apply_1.20.0     plyr_1.8.9              fs_1.6.6               
+[142] stringi_1.8.7           network_1.19.0          viridisLite_0.4.2      
+[145] deldir_2.0-4            gridBase_0.4-7          BiocParallel_1.38.0    
+[148] lazyeval_0.2.2          spatstat.geom_3.5-0     Matrix_1.7-3           
+[151] RcppHNSW_0.6.0          patchwork_1.3.1         shiny_1.11.1           
+[154] ROCR_1.0-11             broom_1.0.8             bslib_0.9.0            </code></pre>
 </div>
 </div>
 

@@ -1,0 +1,381 @@
+---
+title: "Cellchat T cells and Fibroblasts"
+author: "Nadine"
+date: "2026-04-10"
+output: 
+html_document:
+  self_contained: no
+  code_folding: show
+  number_sections: no
+  toc: yes
+  toc_depth: 3
+  toc_float: true
+  collapsed: no
+  smooth_scroll: yes
+editor_options:
+  chunk_output_type: inline
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
+seed <- 1234
+```
+
+
+# Load packages
+```{r}
+suppressPackageStartupMessages({
+  library(Seurat)
+  library(ggpubr)
+  library(dplyr)
+  library(ggplot2)
+  library(here)
+  library(SingleCellExperiment)
+  library(CellChat)
+})
+```
+
+
+# Load seurat object
+```{r}
+# Load merged and cleaned object containing FBs
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_FB_cleaned_cL_seurat.rds")
+seuratFB <- readRDS(fileNam)
+dim(seuratFB)
+
+# Load merged and cleaned object containing T cells
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_allmerged_Tcells_cleaned_seurat_cL.rds")
+seuratT <- readRDS(fileNam)
+dim(seuratT)
+
+```
+
+
+# Transfer metadata
+```{r}
+seuratFB$celltype <- seuratFB$FBclusterLabel
+seuratFB$lineage <- "Fibroblast"
+
+seuratT$celltype <- seuratT$TclusterLabel
+seuratT$lineage <- "Tcell"
+```
+
+
+# Merge seurat objects
+```{r}
+# Merge seurat objects with original identity
+seuratM <- merge(
+  x = seuratFB,
+  y = seuratT,
+  add.cell.ids = c("FB", "T"),
+  project = "FB_T_Merged"
+)
+
+# Join layers
+seuratM <- JoinLayers(seuratM)
+```
+
+
+# Metrics
+```{r}
+Idents(seuratM) <- seuratM$celltype
+
+seuratM$fibroblast_label <- seuratM$FBclusterLabel
+seuratM$tcell_label <- seuratM$TclusterLabel
+table(seuratM$fibroblast_label)
+table(seuratM$tcell_label)
+table(seuratM$celltype)
+table(seuratM$lineage)
+```
+
+# Filter
+```{r}
+# Remove CD4 Tem due to low cell count
+seuratM <- subset(seuratM, celltype %in% c("CD4 Tcm"), invert=TRUE)
+```
+
+
+# Define color palette
+```{r}
+# Color palette celltype
+colPal <- c( "#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99", "#CDCDC1",  "#8C8C82", "#A3B18A","#B5522A" ,  "#2F4F4F" , "#CD6600",  "#2B2B2B" ,"#8B3E2F"  , "#CDC673")
+
+names(colPal) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts", "CD4 Tscm", "CD4 Tem", "Th1/Th17", "gdTcell-1", "CD8 Tscm", "gdTcell-2", "NKTcell", "CD8 Teff", "Tregs") 
+
+```
+
+
+# Set order of clusterLabel
+```{r}
+order <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts", "CD4 Tscm", "CD4 Tcm", "CD4 Tem", "CD4 Teff", "Tregs", "CD8 Tscm", "CD8 Teff", "gdTcell-1",  "gdTcell-2", "NKTcell") 
+
+seuratM$celltype <- factor(seuratM$celltype, levels = order)
+```
+
+
+
+# Run CellChat for Ctrl
+```{r, include = T, eval = F}
+# Subset Controls
+seurat_LMC <- subset(seuratM, subset = cond == "LMC")
+sce_LMC <- as.SingleCellExperiment(seurat_LMC)
+
+# Create CellChat object
+cellchat_LMC <- createCellChat(object = sce_LMC, group.by = "celltype")
+
+# Select database
+CellChatDB <- CellChatDB.mouse
+CellChatDB.use <- CellChatDB
+cellchat_LMC@DB <- CellChatDB.use
+
+# Run analysis
+cellchat_LMC <- subsetData(cellchat_LMC)
+cellchat_LMC <- identifyOverExpressedGenes(cellchat_LMC)
+cellchat_LMC <- identifyOverExpressedInteractions(cellchat_LMC)
+
+# Filter
+options(future.globals.maxSize = 8000 * 1024^2)
+cellchat_LMC <- filterCommunication(cellchat_LMC, min.cells = 5)
+cellchat_LMC <- computeCommunProb(cellchat_LMC, type =  "truncatedMean", trim = 0.2, population.size = FALSE)
+
+cellchat_LMC <- computeCommunProbPathway(cellchat_LMC)
+
+cellchat_LMC <- aggregateNet(cellchat_LMC)
+
+future.seed=TRUE
+cellchat_LMC <- netAnalysis_computeCentrality(cellchat_LMC, slot.name = "netP") 
+```
+
+# Save CellChat Ctrl
+```{r, include = T, eval = F}
+basedir <- here()
+saveRDS(cellchat_LMC, file = paste0(basedir, "/data/pericarditis_T_FB_merged_cleaned_cellchat_LMC.rds"))
+```
+
+
+# Run CellChat for TCRM
+```{r, include = T, eval = F}
+# Subset TCRM
+seurat_TCRM <- subset(seuratM, subset = cond == "TCRM")
+sce_TCRM <- as.SingleCellExperiment(seurat_TCRM)
+
+# Create CellChat object
+cellchat_TCRM <- createCellChat(object = sce_TCRM, group.by = "celltype")
+
+# Select database
+CellChatDB <- CellChatDB.mouse
+CellChatDB.use <- CellChatDB
+cellchat_TCRM@DB <- CellChatDB.use
+
+# Run analysis
+cellchat_TCRM <- subsetData(cellchat_TCRM)
+cellchat_TCRM <- identifyOverExpressedGenes(cellchat_TCRM)
+cellchat_TCRM <- identifyOverExpressedInteractions(cellchat_TCRM)
+
+# Filter
+options(future.globals.maxSize = 8000 * 1024^2)
+cellchat_TCRM <- filterCommunication(cellchat_TCRM, min.cells = 5)
+cellchat_TCRM <- computeCommunProb(cellchat_TCRM, type =  "truncatedMean", trim = 0.2, population.size = FALSE)
+
+cellchat_TCRM <- computeCommunProbPathway(cellchat_TCRM)
+
+cellchat_TCRM <- aggregateNet(cellchat_TCRM)
+
+future.seed=TRUE
+cellchat_TCRM <- netAnalysis_computeCentrality(cellchat_TCRM, slot.name = "netP") 
+```
+
+# Save CellChat TCRM
+```{r, include = T, eval = F}
+basedir <- here()
+saveRDS(cellchat_TCRM, file = paste0(basedir, "/data/pericarditis_T_FB_merged_cleaned_cellchat_TCRM.rds"))
+```
+
+
+```{r, include = F, eval = T}
+# Load CellChat files
+
+## Ctrl
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_T_FB_merged_cleaned_cellchat_LMC.rds")
+cellchat_LMC <- readRDS(fileNam)
+
+## TCRM
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_T_FB_merged_cleaned_cellchat_TCRM.rds")
+cellchat_TCRM <- readRDS(fileNam)
+```
+
+
+# Heatmap of IL-6 sender/ receiver {.tabset}
+
+## Ctrl
+```{r}
+#cellchat_LMC@netP$pathway
+
+# Define pathways to analyze
+pathways.show <- c("IL6")
+
+# Compute centrality
+cellchat_LMC <- netAnalysis_computeCentrality(cellchat_LMC, slot.name = "netP")
+
+# Loop through each pathway and plot the network role
+for (pathway in pathways.show) {
+  netAnalysis_signalingRole_network(
+    cellchat_LMC,
+    signaling = pathway,
+    width = 8,
+    height = 2.5,
+    font.size = 10,
+    color.use = colPal,
+    color.heatmap = "Greys"
+  )
+}
+```
+
+## TCRM
+```{r}
+#cellchat_TCRM@netP$pathway
+
+# Define pathways to analyze
+pathways.show <- c("IL6")
+
+# Compute centrality
+cellchat_TCRM <- netAnalysis_computeCentrality(cellchat_TCRM, slot.name = "netP")
+
+# Loop through each pathway and plot the network role
+for (pathway in pathways.show) {
+  netAnalysis_signalingRole_network(
+    cellchat_TCRM,
+    signaling = pathway,
+    width = 8,
+    height = 2.5,
+    font.size = 10,
+    color.use = colPal,
+    color.heatmap = "Reds"
+  )
+}
+```
+
+
+# Chord diagram of IL-6 sender/ receiver {.tabset}
+## Ctrl
+```{r}
+# Define signaling pathways you to visualize
+pathways.show <- c("IL6")
+
+
+# Loop through each and generate the chord diagram
+for (pathway in pathways.show) {
+  netVisual_aggregate(
+    cellchat_LMC,
+    signaling = pathway,
+    layout = "chord",
+    color.use = colPal,
+    title.name = pathway
+  )
+}
+```
+
+## TCRM
+```{r}
+# Define signaling pathways you to visualize
+pathways.show <- c("IL6")
+
+
+# Loop through each and generate the chord diagram
+for (pathway in pathways.show) {
+  netVisual_aggregate(
+    cellchat_TCRM,
+    signaling = pathway,
+    layout = "chord",
+    color.use = colPal,
+    title.name = pathway
+  )
+}
+```
+
+
+# Comparative analysis of phenotypes
+
+# Merge cellchat objects
+```{r, include = T, eval = F}
+# Merge CellChat objects
+object_list <- list(LMC = cellchat_LMC, TCRM = cellchat_TCRM)
+cellchat_merged <- mergeCellChat(object_list, add.names = names(object_list))
+
+cellchat_merged <- subsetData(cellchat_merged)
+
+# Save merged CellChat object
+basedir <- here()
+saveRDS(cellchat_merged, file = paste0(basedir, "/data/pericarditis_T_FB_merged_cleaned_cellchat_cond_merged.rds"))
+```
+
+
+
+```{r, include=F, eval=T}
+# Load merged cellchat file
+basedir<- here()
+fileNam <- paste0(basedir, "/data/pericarditis_T_FB_merged_cleaned_cellchat_cond_merged.rds")
+cellchat_merged <- readRDS(fileNam)
+
+object_list <- list(LMC = cellchat_LMC, TCRM = cellchat_TCRM)
+
+```
+
+
+# Bubble plots FRC - T cell signaling {.tabset}
+
+## FRC to T cells by condition
+```{r}
+gg1 <- netVisual_bubble(
+  cellchat_merged,
+  sources.use = c("Ccl19 FRCs"),
+  targets.use = c(
+    "CD4 Tscm", "CD4 Tem", "CD4 Teff",
+    "gdTcell-1", "CD8 Tscm", "gdTcell-2",
+    "NKTcell", "CD8 Teff", "Tregs"
+  ),
+  signaling = c("CCL", "CXCL", "IL6", "ICAM"),
+  comparison = c(1, 2),
+  max.dataset = 2,
+  title.name = "Increased Chemokine + IL6 signaling in TCRM",
+  angle.x = 45,
+  remove.isolate = TRUE,
+  color.text = c("lightgray", "#B45B5C")
+)
+gg1
+
+```
+
+## FRC to ab T cells by condition
+```{r}
+gg1 <- netVisual_bubble(
+  cellchat_merged,
+  sources.use = c("Ccl19 FRCs"),
+  targets.use = c(
+    "CD4 Tscm", "CD4 Tem", "CD4 Teff",
+   "CD8 Tscm", "CD8 Teff", "Tregs"
+  ),
+  signaling = c("CCL", "CXCL", "IL6", "ICAM"),
+  comparison = c(1, 2),
+  max.dataset = 2,
+  title.name = "Increased Chemokine + IL6 signaling in TCRM",
+  angle.x = 45,
+  remove.isolate = TRUE,
+  color.text = c("lightgray", "#B45B5C")
+)
+gg1
+
+```
+
+
+# Session info
+```{r}
+sessionInfo()
+date()
+```
+

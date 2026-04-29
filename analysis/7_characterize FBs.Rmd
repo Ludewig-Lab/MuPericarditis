@@ -1,8 +1,8 @@
 ---
 
-title: "7_characterize FBs"
+title: "Fibroblasts TCRM and Ctrl"
 author: "Nadine"
-date: "2025-04-09"
+date: "2026-04-15"
 output: 
 html_document:
   self_contained: no
@@ -25,72 +25,65 @@ seed <- 1234
 #Load packages
 ```{r}
 suppressPackageStartupMessages({
-  library(ExploreSCdataSeurat3)
-  library(runSeurat3)
   library(Seurat)
   library(ggpubr)
   library(pheatmap)
-  library(SingleCellExperiment)
   library(dplyr)
   library(tidyverse)
-  library(viridis)
-  library(muscat)
-  library(circlize)
-  library(destiny)
-  library(scater)
-  library(metap)
-  library(multtest)
   library(clusterProfiler)
   library(org.Mm.eg.db)
-  library(msigdbr)
   library(enrichplot)
   library(DOSE)
   library(grid)
-  library(gridExtra)
-  library(ggupset)
-  library(VennDiagram)
-  library(reshape2)
   library(ggplot2)
-  library(cowplot)
-  library(purrr)
   library(here)
-  library(ggsci)
-  library(RColorBrewer)
-  library(ggrepel)
+  library (tibble)
 })
 ```
 
 
-#Load seurat object
+# Load seurat object
 ```{r}
-#Load merged and cleaned object containing FBs
+# Load merged and cleaned object containing FBs
 basedir<- here()
 fileNam <- paste0(basedir, "/data/pericarditis_allmerged_FB_cleaned_seurat.rds")
 seuratFB <- readRDS(fileNam)
 ```
 
-#Visualizaion in umaps
+
+## DimPlot Clusters {.tabset}
+
+### Resolution 0.2
 ```{r}
 Idents(seuratFB) <-  seuratFB$RNA_snn_res.0.2
 DimPlot(seuratFB, reduction = "umap", label = T)
-
-Idents(seuratFB) <-  seuratFB$RNA_snn_res.0.25
-DimPlot(seuratFB, reduction = "umap", label = T)
-
 ```
 
-#Marker genes per cluster
-```{r, include = T, eval = T}
-#Set identity to resolution 0.25
+### Resolution 0.25
+```{r}
+Idents(seuratFB) <-  seuratFB$RNA_snn_res.0.25
+DimPlot(seuratFB, reduction = "umap", label = T)
+```
+
+### Resolution 0.4
+```{r}
+Idents(seuratFB) <-  seuratFB$RNA_snn_res.0.4
+DimPlot(seuratFB, reduction = "umap", label = T)
+```
+
+
+# Marker genes per cluster
+```{r, include = T, eval = F}
+# Set identity to resolution 0.25
 Idents(seuratFB) <-  seuratFB$RNA_snn_res.0.25
 
-#Run Marker Genes
+# Run marker genes
 seuratFB_markers_all <- FindAllMarkers(object = seuratFB, assay ="RNA",
                                      only.pos = TRUE, min.pct = 0.25,
                                      logfc.threshold = 0.25,
                                      test.use = "wilcox")
 
-#Save Marker Genes as Text File
+# Save marker genes as text file
 basedir<- here()
 basedir <- paste0(basedir, "/docs/")
 write.table(
@@ -100,11 +93,10 @@ write.table(
   quote = FALSE,
   sep = "\t"
 )
-
 ```
 
 
-#Assign labels to fibroblast clusters
+# Assign labels to fibroblast clusters
 ```{r}
 seuratFB$cluster <- seuratFB$RNA_snn_res.0.25
 
@@ -117,83 +109,57 @@ seuratFB$FBclusterLabel[which(seuratFB$RNA_snn_res.0.25 %in% c("4"))] <- "Ccl11 
 seuratFB$FBclusterLabel[which(seuratFB$RNA_snn_res.0.25 %in% c("5"))] <- "Dpp4 Fibroblasts"
 seuratFB$FBclusterLabel[which(seuratFB$RNA_snn_res.0.25 %in% c("6"))] <- "Bmp4 Fibroblasts"
 seuratFB$FBclusterLabel[which(seuratFB$RNA_snn_res.0.25 %in% c("7"))] <- "Col11 Fibroblasts"
-
-
 ```
 
 
-#Define color palette
+# Define color palette
 ```{r}
+# Color palette FBclusterLabel
 colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
 names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
 
+# Color palette Phenotypes
 colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
 names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
-
 ```
 
-#Stats
+
+# Metrics
 ```{r}
 table(seuratFB$orig.ident)
-table(seuratFB$FBclusterLabel)
-table(seuratFB$FBclusterLabel, seuratFB$cond)
-table(seuratFB$Phenotype)
 table(seuratFB$cond)
-table(seuratFB$FBclusterLabel, seuratFB$SampleName)
+table(seuratFB$Phenotype)
+table(seuratFB$FBclusterLabel)
 ```
 
 
-#DimPlot FBclusterLabel
+## DimPlot Clusters {.tabset}
+
+### FBclusterLabel
 ```{r}
 Idents(seuratFB) <-  seuratFB$FBclusterLabel
-
 DimPlot(seuratFB, reduction = "umap", cols=colPal_FB, group.by= "FBclusterLabel")
+```
+
+### Condition split
+```{r}
 DimPlot(seuratFB, reduction = "umap", cols=colPal_FB, label = F, group.by= "FBclusterLabel", split.by = "cond")
 ```
 
 
-#DimPlot Condition
-```{r}
-DimPlot(seuratFB, reduction = "umap", cols=c("#D3D3D3", "#B45B5C"), group.by = "cond")
 
-DimPlot(seuratFB, reduction = "umap", cols=c("#D3D3D3", "#B45B5C"), group.by = "cond", split.by = "cond")
-
-```
-
-#DimPlot Phenotype
-```{r}
-DimPlot(seuratFB, reduction = "umap", cols=colPal_Phenotype, group.by = "Phenotype")
-
-DimPlot(seuratFB, reduction = "umap", group.by = "Phenotype", cols = colPal_Phenotype, order = c("iCMP", "inflamed","healthy"), pt.size = 0.02)
-
-
-DimPlot(seuratFB, reduction = "umap", cols=c("#E6E6E6","#E6E6E6","#FCDACB"), group.by = "Phenotype", order = "inflamed")
-DimPlot(seuratFB, reduction = "umap", cols=c("#E6E6E6","#E6E6E6","#8B0000"), group.by = "Phenotype", order = "iCMP")
-
-```
-
-
-#DimPlot Age
-```{r}
-DimPlot(seuratFB, reduction = "umap", cols=c("#99B898", "#628395"), group.by = "age", split.by = "age")
-DimPlot(seuratFB, reduction = "umap", cols=c("#D3D3D3", "#628395"), group.by = "age", order = "8wk")
-DimPlot(seuratFB, reduction = "umap", cols=c("#D3D3D3", "#99B898"), group.by = "age", order = "4wk")
-DimPlot(seuratFB, reduction = "umap", cols=c("#D3D3D3", "#B45B5C"), group.by = "cond", split.by = "age")
-
-```
-
-#Calculate marker genes per cluster
-```{r, include = T, eval = T}
-#Set identity to resolution FBclusterLabel
+# Calculate marker genes per cluster
+```{r, include = T, eval = F}
+# Set identity to resolution FBclusterLabel
 Idents(seuratFB) <-  seuratFB$FBclusterLabel
 
-#Run Marker Genes
+# Run marker genes
 seuratFB_markers_all <- FindAllMarkers(object = seuratFB, assay ="RNA",
                                      only.pos = TRUE, min.pct = 0.25,
                                      logfc.threshold = 0.25,
                                      test.use = "wilcox")
 
-#Save Marker Genes as Text file
+# Save marker genes as text file
 basedir<- here()
 basedir <- paste0(basedir, "/docs/")
 write.table(
@@ -203,20 +169,18 @@ write.table(
   quote = FALSE,
   sep = "\t"
 )
-
 ```
 
 
-#Load MarkerGenes
-```{r}
-
+# Load marker genes text file
+```{r, include=T, eval=T}
 basedir<- here()
 fileNam <- paste0(basedir, "/docs/pericarditis_allmerged_FB_0.25_cL_markerGenes.txt")
 seuratFB_MarkerGenes <- read.table(fileNam, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-  
 ```
 
-#Load average heatmap function
+
+# Load average heatmap function
 ```{r avg heatmap funct}
 
 avgHeatmap <- function(seuratFB, selGenes, colVecIdent, colVecCond=NULL,
@@ -285,7 +249,10 @@ avgHeatmap <- function(seuratFB, selGenes, colVecIdent, colVecCond=NULL,
 }
 ```
 
-#Heatmap of top 10 marker genes per cluster
+
+## Heatmaps {.tabset}
+
+### Top 10 marker genes per cluster
 ```{r, fig.height=15}
 cluster <- levels(seuratFB)
 selGenesAll <- seuratFB_MarkerGenes %>% group_by(cluster) %>% 
@@ -297,7 +264,7 @@ selGenesAll <- selGenesAll %>% mutate(gene=gsub("^.*\\.", "", Gene)) %>% filter(
 colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
 names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
 
-ordVec <- names(colPal_FB)
+ordVec <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
 
 Idents(seuratFB) <- seuratFB$FBclusterLabel
 pOut <- avgHeatmap(seurat = seuratFB, selGenes = selGenesAll,
@@ -308,9 +275,7 @@ pOut <- avgHeatmap(seurat = seuratFB, selGenes = selGenesAll,
 
 ```
 
-
-
-#Heatmap of selected immune interaction genes
+### Selected immune interaction genes
 ```{r, fig.height=4, fig.width=5}
 
 genes <- data.frame(gene=rownames(seuratFB))
@@ -328,23 +293,16 @@ gapR <- data.frame(Grp=unique(selGenes$Grp)) %>%
 colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
 names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
 
-#ordVec <- c("Cxcl13 CoverCells", "Ccl19 FRCs", "Col11 Fibroblasts", "Dpp4 Fibroblasts", "Fat4 Fibroblasts","Bmp4 Fibroblasts", "Ccl11 Fibroblasts", "Tcf21 Fibroblasts")
+ordVec <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
 
 pOut <- avgHeatmap(seuratFB = seuratFB, selGenes = selGenes,
                   colVecIdent = colPal_FB, 
                   ordVec=ordVec,
-                  gapVecR=NULL, gapVecC=NULL,cc=T,
+                  gapVecR=NULL, gapVecC=NULL,cc=F,
                   cr=T, condCol=F)
 ```
 
-
-
-
-
-
-
-
-#Heatmap of selected immune interaction genes (ordered clusters)
+### Selected ECM genes
 ```{r, fig.height=4, fig.width=5}
 
 genes <- data.frame(gene=rownames(seuratFB))
@@ -362,8 +320,7 @@ gapR <- data.frame(Grp=unique(selGenes$Grp)) %>%
 colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
 names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
 
-ordVec <- c("Cxcl13 CoverCells", "Ccl19 FRCs", "Col11 Fibroblasts", "Dpp4 Fibroblasts", "Fat4 Fibroblasts","Bmp4 Fibroblasts", "Ccl11 Fibroblasts", "Tcf21 Fibroblasts")
-
+ordVec <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
 
 pOut <- avgHeatmap(seuratFB = seuratFB, selGenes = selGenes,
                   colVecIdent = colPal_FB, 
@@ -371,27 +328,26 @@ pOut <- avgHeatmap(seuratFB = seuratFB, selGenes = selGenes,
                   gapVecR=NULL, gapVecC=NULL,cc=F,
                   cr=T, condCol=F)
 ```
+## Dotplot of selected marker genes {.tabset}
 
-
-
-#Dotplot of selected marker genes
+### Dotplot of selected marker genes (unordered)
 ```{r, fig.height=4, fig.width=5}
 
 Idents(seuratFB) <- seuratFB$FBclusterLabel
 
-#Marker genes as simple vector
-selMarker <-  c("Pdgfra", "Pdpn", "Cxcl13", "Ccl19", "Ccl11",  "Tcf21",  "Bmp4", "Col11a1", "Dpp4", "Fat4")
+# Marker genes as simple vector
+selMarker <-  c("Pdgfra", "Pdpn", "Cxcl13", "Ccl19", "Ccl11",  "Tcf21",  "Bmp4", "Col11a1", "Dpp4", "Fat4", "Aldh1a2")
 
-#Assign a full gene name to the short geneID
+# Assign a full gene name to the short geneID
 genes <- data.frame(gene=rownames(seuratFB)) %>% mutate(geneID=gsub(".*\\.", "", gene)) %>% 
   filter(geneID %in% as.character(selMarker)) %>% arrange(factor(geneID, levels = rev(selMarker)))
 
-#Create dataframe of cL
+# Create dataframe of cL
 clusterDat <- data.frame(cluster=levels(seuratFB)) %>%
   mutate(label = levels(seuratFB))
 
 
-#Scale the gene across all clusters
+# Scale the gene across all clusters
 DotPlot(
   object=seuratFB,
   features = genes$gene,
@@ -412,24 +368,24 @@ DotPlot(
 
 ```
 
-#Dotplot of selected marker genes (ordered clusters)
+### Dotplot of selected marker genes (ordered)
 ```{r, fig.height=4, fig.width=5}
 
-ordVec <- c("Cxcl13 CoverCells", "Ccl19 FRCs", "Col11 Fibroblasts", "Dpp4 Fibroblasts", "Fat4 Fibroblasts","Bmp4 Fibroblasts", "Ccl11 Fibroblasts", "Tcf21 Fibroblasts")
+# Set cluster order
+ordVec <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
 
-
+# Set identities
 Idents(seuratFB) <- seuratFB$FBclusterLabel
 Idents(seuratFB) <- factor(Idents(seuratFB), levels = ordVec)
 
-#Marker genes as simple vector
-selMarker <-  c("Pdgfra", "Pdpn", "Cxcl13", "Ccl19", "Ccl11",  "Tcf21",  "Bmp4", "Col11a1", "Dpp4", "Fat4")
+# Marker genes as simple vector
+selMarker <-  c("Pdgfra", "Pdpn", "Cxcl13", "Ccl19", "Ccl11",  "Tcf21",  "Bmp4", "Col11a1", "Dpp4", "Fat4", "Aldh1a2")
 
-
-#Assign a full gene name to the short geneID
+# Assign a full gene name to the short geneID
 genes <- data.frame(gene=rownames(seuratFB)) %>% mutate(geneID=gsub(".*\\.", "", gene)) %>% 
   filter(geneID %in% as.character(selMarker)) %>% arrange(factor(geneID, levels = rev(selMarker)))
 
-#Scale the gene across all clusters
+# Scale the gene across all clusters
 DotPlot(
   object        = seuratFB,
   features      = genes$gene,
@@ -445,107 +401,62 @@ DotPlot(
   coord_flip() + scale_x_discrete(breaks = genes$gene,labels = genes$geneID) + scale_y_discrete(limits = ordVec) + theme(axis.text.x = element_text(angle = 90))
 
 ```
+## Cluster abundances  {.tabset}
 
-#Abundance across all samples
-```{r}
-#table(seuratFB$SampleName)
-
-#Plot abundance of clusters in individual samples
-datList <- NULL
-for(con in unique(seuratFB$SampleName)){
-  seuratFBSub <- subset(seuratFB, SampleName==con)
-  print(dim(seuratFBSub))
-  dat_SampleName <- as.data.frame(table(seuratFBSub$FBclusterLabel)) %>%
-  mutate(percent=Freq/ncol(seuratFBSub)) %>% mutate(SampleName=con)
-  datList[[con]] <- dat_SampleName
-}
-dat_all <- do.call("rbind", datList)
-
-
-ordX <- c("4w_LMC1", "4w_LMC2", "4w_LMC3", "4w_LMC4", "8w_LMC1", "8w_LMC2", "8w_LMC3", "8w_LMC4", "8w_LMC5", "8w_LMC6", "8w_LMC7", "8w_LMC8" , "4w_TCRM1", "4w_TCRM2", "4w_TCRM3", "4w_TCRM4", "4w_TCRM5", "4w_TCRM6", "4w_TCRM7", "8w_TCRM1", "8w_TCRM2", "8w_TCRM3", "8w_TCRM4", "8w_TCRM5", "8w_TCRM6", "8w_TCRM7", "8w_TCRM8")
-
-#Create barplot with samples on x axis and cluster colors
-ggbarplot(dat_all, x= "SampleName", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency") +  scale_fill_manual(values = colPal_FB) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) 
-
-
-
-```
-
-#Abundance across non-sorted samples
-```{r}
-#Plot abundance of clusters in individual samples
-##Leave out sorted samples
-
-seuratFBSub <- subset(seuratFB, SampleName %in% c("8w_LMC8", "8w_TCRM7", "8w_TCRM8"), invert=TRUE )
-  
-##run calculations
-datList <- NULL
-for(con in unique(seuratFBSub$SampleName)){
-  seuratFB_sub <- subset(seuratFBSub, SampleName==con)
-  print(dim(seuratFB_sub))
-  dat_SampleName <- as.data.frame(table(seuratFB_sub$FBclusterLabel)) %>%
-  mutate(percent=Freq/ncol(seuratFB_sub)) %>% mutate(SampleName=con)
-  datList[[con]] <- dat_SampleName
-}
-dat_all <- do.call("rbind", datList)
-
-
-ordX <- c("4w_LMC1", "4w_LMC2", "4w_LMC3", "4w_LMC4", "8w_LMC1", "8w_LMC2", "8w_LMC3", "8w_LMC4", "8w_LMC5", "8w_LMC6", "8w_LMC7",  "4w_TCRM1", "4w_TCRM2", "4w_TCRM3", "4w_TCRM4", "4w_TCRM5", "4w_TCRM6", "4w_TCRM7", "8w_TCRM1", "8w_TCRM2", "8w_TCRM3", "8w_TCRM4", "8w_TCRM5", "8w_TCRM6")
-
-#Create barplot with samples on x axis and cluster colors
-ggbarplot(dat_all, x= "SampleName", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency") +  scale_fill_manual(values = colPal_FB) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) 
-
-
-
-```
-
-#Abundance across phenotypes
+### Phenotypes
 ```{r, fig.height=3, fig.width=4}
-
-datList <- NULL
+# Plot abundance of clusters across Phenotypes
+datList <- list()
 for(con in unique(seuratFB$Phenotype)){
   seuratFBSub <- subset(seuratFB, Phenotype==con)
-  print(dim(seuratFBSub))
   dat_Phenotype <- as.data.frame(table(seuratFBSub$FBclusterLabel)) %>%
   mutate(percent=Freq/ncol(seuratFBSub)) %>% mutate(Phenotype=con)
   datList[[con]] <- dat_Phenotype
 }
 dat_all <- do.call("rbind", datList)
 
-#Set order of Phenotypes
+# Set Phenotype order
 ordX <- c("healthy", "inflamed", "iCMP")
 
-#Create barplot with Phenotypes on x axis and cluster colors
+# Set cluster order
+ordY <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
+dat_all$Var1 <- factor(dat_all$Var1, levels = ordY)
+
+# Barplot with Phenotypes on x axis and cluster colors
 ggbarplot(dat_all, x= "Phenotype", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency") +  scale_fill_manual(values = colPal_FB) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) 
 ```
 
-#Abundance across conditions
+### Conditions
 ```{r, , fig.height=3, fig.width=4}
-datList <- NULL
+# Plot abundance of clusters across Conditions
+datList <- list()
 for(con in unique(seuratFB$cond)){
   seuratFBSub <- subset(seuratFB, cond==con)
-  print(dim(seuratFBSub))
   dat_con <- as.data.frame(table(seuratFBSub$FBclusterLabel)) %>%
   mutate(percent=Freq/ncol(seuratFBSub)) %>% mutate(cond=con)
   datList[[con]] <- dat_con
 }
 dat_all <- do.call("rbind", datList)
 
-## plot abundance
-ggbarplot(dat_all, x= "cond", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency")+ scale_fill_manual(values = colPal_FB)
+# Set cluster order
+ordY <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
+dat_all$Var1 <- factor(dat_all$Var1, levels = ordY)
 
+# Barplot with Conditions on x axis and cluster colors
+ggbarplot(dat_all, x= "cond", y= "percent", fill = "Var1", legend = "right", legend.titel = "cluster", ylab = "frequency")+ scale_fill_manual(values = colPal_FB)
 ```
 
-#Calculate DE genes for each cluster
+
+# Calculate DE genes for each cluster
 ```{r, include = T, eval = F}
-## Calculate DE genes per cluster compared to all others
+# Calculate DE genes per cluster compared to all others
 Idents(seuratFB) <- seuratFB$FBclusterLabel
 levels(seuratFB)
 
 seuratFB_DEGenes <- FindAllMarkers(seuratFB, only.pos=T) %>% 
   dplyr::filter(p_val_adj < 0.01) 
 
-#Save DEGenes as Text file
+# Save DEGenes as text file
 basedir<- here()
 basedir <- paste0(basedir, "/docs/")
 write.table(
@@ -555,25 +466,26 @@ write.table(
   quote = FALSE,
   sep = "\t"
 )
-
 ```
 
-#Load DEGenes
+# Load DEGene text file
 ```{r}
 basedir<- here()
 fileNam <- paste0(basedir, "/docs/pericarditis_allmerged_FB_0.25_cL_DEGenes.txt")
 seuratFB_DEGenes <- read.table(fileNam, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-
 ```
 
-#Lollipop plot - immune interaction
+
+## Lollipop plot  {.tabset}
+
+### Immune interaction pathways
 ```{r, fig.width=8}
 
-#Clean DEGenes
+# Clean DEGenes
 DEGenes_all <- seuratFB_DEGenes %>% 
   mutate(EnsID = sub("\\..*", "", gene))
 
-#Run enrichGO per cluster
+# Run enrichGO per cluster
 cluster_list <- split(DEGenes_all, DEGenes_all$cluster)
 
 ego_list <- lapply(names(cluster_list), function(clust){
@@ -594,7 +506,7 @@ ego_list <- lapply(names(cluster_list), function(clust){
 names(ego_list) <- names(cluster_list)
 
 
-#Selected immune interaction pathways
+# Selected immune interaction pathways
 sel_all <- c(
   "cytokine-mediated signaling pathway",
   "regulation of innate immune response",
@@ -604,7 +516,7 @@ sel_all <- c(
   "regulation of T cell proliferation"
 )
 
-#Combine to df
+# Combine to df
 plot_df <- do.call(rbind, lapply(names(ego_list), function(cl){
 
   ego_all <- ego_list[[cl]]
@@ -619,7 +531,7 @@ plot_df <- do.call(rbind, lapply(names(ego_list), function(cl){
 }))
 
 
-#Order clusters for plotting
+# Order clusters for plotting
 cluster_colors <- c(
    "Cxcl13 CoverCells"="#CD6839",
    "Ccl19 FRCs"="#B2CD5B",
@@ -632,7 +544,7 @@ cluster_colors <- c(
 )
 plot_df$Cluster <- factor(plot_df$Cluster, levels = names(cluster_colors))
 
-#Lollipop plot
+# Lollipop plot
 ggplot(plot_df,
        aes(x = log10_adjP,
            y = Description,
@@ -663,19 +575,16 @@ ggplot(plot_df,
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank()
   )
-
-
 ```
 
-
-#Lollipop plot - ECM/Homeostasis
+### ECM/Homeostasis pathways
 ```{r, fig.width=9}
 
-#Clean DEGenes
+# Clean DEGenes
 DEGenes_all <- seuratFB_DEGenes %>% 
   mutate(EnsID = sub("\\..*", "", gene))
 
-#Run enrichGO per cluster
+# Run enrichGO per cluster
 cluster_list <- split(DEGenes_all, DEGenes_all$cluster)
 
 ego_list <- lapply(names(cluster_list), function(clust){
@@ -696,7 +605,7 @@ ego_list <- lapply(names(cluster_list), function(clust){
 names(ego_list) <- names(cluster_list)
 
 
-#Selected niche homeostasis pathways
+# Selected niche homeostasis pathways
 sel_all <- c(
   "extracellular matrix organization",
   "regulation of cellular response to growth factor stimulus",
@@ -706,7 +615,7 @@ sel_all <- c(
   "ossification"
 )
 
-#Combine to df
+# Combine to df
 plot_df <- do.call(rbind, lapply(names(ego_list), function(cl){
 
   ego_all <- ego_list[[cl]]
@@ -721,7 +630,7 @@ plot_df <- do.call(rbind, lapply(names(ego_list), function(cl){
 }))
 
 
-#Order clusters for plotting
+# Order clusters for plotting
 cluster_colors <- c(
    "Cxcl13 CoverCells"="#CD6839",
    "Ccl19 FRCs"="#B2CD5B",
@@ -734,7 +643,7 @@ cluster_colors <- c(
 )
 plot_df$Cluster <- factor(plot_df$Cluster, levels = names(cluster_colors))
 
-#Lollipop plot
+# Lollipop plot
 ggplot(plot_df,
        aes(x = log10_adjP,
            y = Description,
@@ -765,21 +674,19 @@ ggplot(plot_df,
     panel.grid.major.y = element_blank(),
     panel.grid.minor.y = element_blank()
   )
-
-
 ```
 
 
 
-#Save seuratFB object
+# Save seuratFB object
 ```{r}
-#Save seurat object
+# Save seurat object
 basedir <- here()
 saveRDS(seuratFB, file = paste0(basedir, "/data/pericarditis_allmerged_FB_cleaned_cL_seurat.rds"))
 ```
 
 
-#Session info
+# Session info
 ```{r}
 sessionInfo()
 date()

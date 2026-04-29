@@ -1,7 +1,7 @@
 ---
-title: "characterize full dataset"
+title: "IL6 Signaling in Pericardial Cells"
 author: "Nadine"
-date: "2025-04-09"
+date: "2026-04-10"
 output: 
 html_document:
   self_contained: no
@@ -21,54 +21,51 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
 seed <- 1234
 ```
 
-#Load packages
+
+# Load packages
 ```{r}
 suppressPackageStartupMessages({
   library(dplyr)
-  library(reshape2)
   library(ggplot2)
-  library(cowplot)
-  library(purrr)
   library(Seurat)
-  library(tidyverse)
-  library(ggpubr)
-  library(runSeurat3)
   library(here)
-  library(ggsci)
   library(pheatmap)
-  library(scater)
+  library(tibble)
 })
 ```
 
 
-#Load seurat object
+# Load seurat object
 ```{r}
-#Load merged and cleaned object from previous analysis
+# Load merged and cleaned object
 basedir<- here()
 fileNam <- paste0(basedir, "/data/pericarditis_allmerged_cleaned_cL_seurat.rds")
 seuratM <- readRDS(fileNam)
 ```
 
 
-#Set color palette for clusters
+# Set color palette
 ```{r}
+# Color palette clusterLabel
 colPal <- c( "#CDC1C5","#8B7B8B","#CDC673","#CD5B45","#C1CDC1","#7AC5CD","#7F7F7F","#4A708B","#CD919E","#8B668B","#8B475D","#8FBC8F","#CCCCCC","#8B7D6B","#CDC8B1","#333333")
 
 names(colPal) <- c("B2 Bcells","B1 Bcells", "Cycling cells","Plasma cells", "Tcells", "ILCs", "gdTcells",  "NKcells", "Mono/Mphs", "Neutrophils", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells","Mesothelial cells", "Adipocytes") 
 
+# Color palette Phenotypes
 colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
 names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
 
 ```
 
-#Visualization in umaps
+
+# DimPlot Clusters
 ```{r}
 Idents(seuratM) <-  seuratM$clusterLabel
-DimPlot(seuratM, reduction = "umap", cols=colPal, group.by= "clusterLabel")+
-  theme_void()
+DimPlot(seuratM, reduction = "umap", cols=colPal, group.by= "clusterLabel") + theme_void()
 ```
 
-#Load average heatmap function
+
+# Average heatmap function
 ```{r avg heatmap funct}
 
 avgHeatmap <- function(seuratA, selGenes, colVecIdent, colVecCond=NULL,
@@ -137,10 +134,13 @@ avgHeatmap <- function(seuratA, selGenes, colVecIdent, colVecCond=NULL,
 }
 ```
 
-#Heatmap of IL6 signalling
+
+# Heatmap of IL6 signalling
 ```{r, fig.height=7}
-selMarker <- c("Il6", "Il6ra", "Il6st")
+# Selected genes
+selMarker <- c("Il6ra", "Il6st")
     
+#Set identity
 Idents(seuratM) <- seuratM$clusterLabel
 
 selGenes <- data.frame(gene=selMarker) %>%
@@ -163,127 +163,47 @@ pOut <- avgHeatmap(seurat = seuratM, selGenes = selGenes,
                   ordVec=ordVec,
                   gapVecR=gapR$cumSum, gapVecC=NULL,cc=F,
                   cr=F, condCol=F)
-
-
 ```
 
 
-#Feature plots
+# Subset selected clusters
 ```{r}
-#genes <- data.frame(gene=rownames(seuratM))
-
-genes_sel <- c(
-  "ENSMUSG00000025746.Il6",
-  "ENSMUSG00000027947.Il6ra",
-  "ENSMUSG00000021756.Il6st",
-  "ENSMUSG00000002897.Il17ra"
-)
-
-
-plots <- lapply(genes_sel, function(gene) {
-  FeaturePlot(
-    object = seuratM,
-    features = gene,
-    cols = c("#C1CDCD", "#800000"),
-    reduction = "umap", order = T
-  )
-})
-
-for (p in plots) print(p)
-
-```
-
-#Violin plots across all clusters
-```{r}
-#genes <- data.frame(gene=rownames(seuratA))
-
-
-genes_sel <- c(
-  "ENSMUSG00000025746.Il6",
-  "ENSMUSG00000027947.Il6ra",
-  "ENSMUSG00000021756.Il6st",
-  "ENSMUSG00000002897.Il17ra"
-)
-
-# gene expression in cluster
-Idents(seuratM) <- seuratM$clusterLabel
-
-ordX <- names(colPal)
-
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratM,
-    features = gene,
-    cols = colPal, alpha = 0.05
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)
-
-
-
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratM,
-    features = gene,
-    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)
-
-
-```
-
-
-#Violin plots on selected clusters
-```{r}
-unique(seuratM$clusterLabel)
-Idents(seuratM) <- seuratM$clusterLabel
-dim(seuratM)
+# Select clusters with Il6 receptor expression
 seuratMSub <- subset(seuratM, idents = c("Tcells", "Mono/Mphs", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells", "Mesothelial cells"))
-
-
-genes_sel <- c(
-  "ENSMUSG00000025746.Il6",
-  "ENSMUSG00000027947.Il6ra",
-  "ENSMUSG00000021756.Il6st"
-)
-
-# gene expression in cluster
-Idents(seuratMSub) <- seuratMSub$clusterLabel
 
 ordX <- c("Tcells", "Mono/Mphs", "DCs", "Fibroblasts-1", "Fibroblasts-2", "Cover cells", "Mesothelial cells")
 
-
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratMSub,
-    features = gene,
-    cols = colPal, alpha = 0.05
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)
-
-
-
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratMSub,
-    features = gene,
-    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)
-
-
 ```
 
 
+## Violin plots per cluster {.tabset}
 
-#session info
+### Il6ra
+```{r}
+VlnPlot(object = seuratMSub, features = "ENSMUSG00000027947.Il6ra", cols = colPal, alpha = 0.05) + scale_x_discrete(limits = ordX)
+```
+
+### Il6st
+```{r}
+VlnPlot(object = seuratMSub, features = "ENSMUSG00000021756.Il6st", cols = colPal, alpha = 0.05) + scale_x_discrete(limits = ordX)
+```
+
+
+## Violin plots split by condition {.tabset}
+
+
+### Il6ra
+```{r}
+VlnPlot(object = seuratMSub, features = "ENSMUSG00000027947.Il6ra", cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)
+```
+
+### Il6st
+```{r}
+VlnPlot(object = seuratMSub, features = "ENSMUSG00000021756.Il6st", cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)
+```
+
+
+# Session info
 ```{r}
 sessionInfo()
 date()

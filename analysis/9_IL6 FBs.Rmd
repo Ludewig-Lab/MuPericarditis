@@ -1,8 +1,8 @@
 ---
 
-title: "9_IL6 Ccl19 FRCs"
+title: "IL6 Signaling in Pericardial Fibroblasts"
 author: "Nadine"
-date: "2025-04-09"
+date: "2026-04-15"
 output: 
 html_document:
   self_contained: no
@@ -22,27 +22,20 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
 seed <- 1234
 ```
 
-#Load packages
+# Load packages
 ```{r}
 suppressPackageStartupMessages({
   library(dplyr)
-  library(reshape2)
   library(ggplot2)
-  library(cowplot)
-  library(purrr)
   library(Seurat)
-  library(tidyverse)
-  library(ggpubr)
-  library(runSeurat3)
   library(here)
-  library(ggsci)
   library(pheatmap)
-  library(scater)
+  library(tibble)
 })
 ```
 
 
-#Load seurat object
+# Load seurat object
 ```{r}
 #Load merged and cleaned object containing FBs
 basedir<- here()
@@ -50,113 +43,64 @@ fileNam <- paste0(basedir, "/data/pericarditis_allmerged_FB_cleaned_cL_seurat.rd
 seuratFB <- readRDS(fileNam)
 ```
 
-#Define color palette
+# Define color palette
 ```{r}
+# Color palette FBclusterLabel
 colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
 names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
 
+# Color palette Phenotypes
 colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
 names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
 
 ```
 
 
-#Violin plots - genes across clusters
-```{r}
+## Violin plots per cluster {.tabset}
 
+### Il6
+```{r}
 #genes <- data.frame(gene=rownames(seuratFB))
-
-#Select genes to plot
-genes_sel <- c(
-  "ENSMUSG00000071005.Ccl19",
-  "ENSMUSG00000025746.Il6",
-  "ENSMUSG00000027947.Il6ra",
-  "ENSMUSG00000021756.Il6st",
-  "ENSMUSG00000002897.Il17ra"
-
-)
-
-#Gene expression across all cluster
+# Gene expression across all cluster
 Idents(seuratFB) <- seuratFB$FBclusterLabel
 
-ordX <- c("Cxcl13 CoverCells", "Ccl19 FRCs", "Col11 Fibroblasts", "Dpp4 Fibroblasts", "Fat4 Fibroblasts","Bmp4 Fibroblasts", "Ccl11 Fibroblasts", "Tcf21 Fibroblasts")
+# Set sample order
+ordX <- c("Ccl19 FRCs", "Cxcl13 CoverCells", "Dpp4 Fibroblasts", "Ccl11 Fibroblasts", "Fat4 Fibroblasts", "Bmp4 Fibroblasts", "Tcf21 Fibroblasts", "Col11 Fibroblasts")
 
-#Violin plot
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratFB,
-    features = gene,
-    cols = colPal_FB, alpha = 0.05
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)
-
-
-
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratFB,
-    features = gene,
-    cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = T, alpha = 0.1
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)
+# Violin plot
+VlnPlot(object = seuratFB, features = "ENSMUSG00000025746.Il6", cols = colPal_FB, alpha = 0.05) + scale_x_discrete(limits = ordX)
 ```
 
-#Feature plot
+### Il6ra
 ```{r}
-
-plots <- lapply(genes_sel, function(gene) {
-  FeaturePlot(
-    object = seuratFB,
-    features = gene,
-    cols = c("#C1CDCD", "#800000"),
-    reduction = "umap", order = T
-  )
-})
-
-for (p in plots) print(p)
-
+VlnPlot(object = seuratFB, features = "ENSMUSG00000027947.Il6ra", cols = colPal_FB, alpha = 0.05) + scale_x_discrete(limits = ordX)
 ```
 
-#Violin plots - Ccl19 FRCs
+### Il6st
 ```{r}
-
-#Gene expression in Ccl19 FRCs
-Idents(seuratFB) <- seuratFB$FBclusterLabel
-
-seuratFBSub <- subset(seuratFB, idents = c("Ccl19 FRCs"))
-
-colPal_Phenotype <- c("#E6E6E6", "#FCDACB","#8B0000" )
-names(colPal_Phenotype) <- c("healthy", "inflamed","iCMP")
-
-seuratFBSub$Phenotype <- factor(
-  seuratFBSub$Phenotype,
-  levels = c("healthy", "inflamed", "iCMP")
-)
-
-
-#Violin plot
-plots <- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratFBSub,
-    features = gene,
-    split.by = "Phenotype",
-    cols = colPal_Phenotype, alpha = 0.1
-  )
-})
-
-for (p in plots) print(p)
-
-
+VlnPlot(object = seuratFB, features = "ENSMUSG00000021756.Il6st", cols = colPal_FB, alpha = 0.05) + scale_x_discrete(limits = ordX)
 ```
 
 
+## Violin plots split by condition {.tabset}
+
+### Il6
+```{r}
+VlnPlot(object = seuratFB, features = "ENSMUSG00000025746.Il6", cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)
+```
+
+### Il6ra
+```{r}
+VlnPlot(object = seuratFB, features = "ENSMUSG00000027947.Il6ra", cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)
+```
+
+### Il6st
+```{r}
+VlnPlot(object = seuratFB, features = "ENSMUSG00000021756.Il6st", cols = c("#D3D3D3", "#B45B5C"), split.by = "cond", split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)
+```
 
 
-#Session info
+# Session info
 ```{r}
 sessionInfo()
 date()

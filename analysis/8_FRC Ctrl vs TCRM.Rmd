@@ -1,7 +1,7 @@
 ---
-title: "8_FRC Ctrl vs TCRM"
+title: "FALC FRCs TCRM and Ctrl"
 author: "Nadine"
-date: "2025-04-09"
+date: "2026-04-15"
 output: 
 html_document:
   self_contained: no
@@ -21,47 +21,23 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c("png", "pdf"))
 seed <- 1234
 ```
 
-#Load packages
+# Load packages
 ```{r}
 suppressPackageStartupMessages({
-  library(ExploreSCdataSeurat3)
-  library(runSeurat3)
+
   library(Seurat)
-  library(ggpubr)
-  library(pheatmap)
-  library(SingleCellExperiment)
   library(dplyr)
   library(tidyverse)
-  library(viridis)
-  library(muscat)
-  library(circlize)
-  library(destiny)
-  library(scater)
-  library(metap)
-  library(multtest)
+  library(tibble)
   library(clusterProfiler)
   library(org.Mm.eg.db)
-  library(msigdbr)
-  library(enrichplot)
-  library(DOSE)
-  library(grid)
-  library(gridExtra)
-  library(ggupset)
-  library(VennDiagram)
-  library(reshape2)
   library(ggplot2)
-  library(cowplot)
-  library(purrr)
   library(here)
-  library(ggsci)
-  library(RColorBrewer)
-  library(ggrepel)
-  library(ImmunoLogic)
 })
 ```
 
 
-#Load seurat object
+# Load seurat object
 ```{r}
 #Load merged and cleaned object containing FBs
 basedir<- here()
@@ -69,18 +45,20 @@ fileNam <- paste0(basedir, "/data/pericarditis_allmerged_FB_cleaned_cL_seurat.rd
 seuratFB <- readRDS(fileNam)
 ```
 
-#Define color palette
+
+# Define color palette
 ```{r}
+# Color palette FBclusterLabel
 colPal_FB <- c("#C1CDC1", "#EEE8AA", "#556B2F", "#CD6839", "#B2CD5B", "#A2B5CD","#DCA86C", "#6B7F99")
 names(colPal_FB) <- c("Fat4 Fibroblasts","Ccl11 Fibroblasts", "Tcf21 Fibroblasts", "Cxcl13 CoverCells", "Ccl19 FRCs", "Bmp4 Fibroblasts", "Col11 Fibroblasts", "Dpp4 Fibroblasts")
 
+# Color palette Phenotypes
 colPal_Phenotype <- c("#8B0000", "#FCDACB", "#E6E6E6")
 names(colPal_Phenotype) <- c( "iCMP", "inflamed", "healthy")
-
 ```
 
 
-#calculate DE genes between conditions per cluster
+# Calculate DE genes between conditions per cluster
 ```{r, include = T, eval = F}
 #Set identity
 Idents(seuratFB) <- seuratFB$FBclusterLabel
@@ -143,46 +121,26 @@ write.table(
 
 ```
 
-#Load DEGenes
-```{r}
 
+```{r, include = F, eval = T}
+# Load DEGenes text file
 basedir<- here()
 fileNam <- paste0(basedir, "/docs/pericarditis_allmerged_FB_cleaned_cL_DEgenes_perCluster_perCondition.txt")
 DE_all_filtered <- read.table(fileNam, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-
-  
 ```
 
 
-#Barplot - number of DE genes per cluster
+# Transform gene names to short version
 ```{r}
-DE_summary <- DE_all_filtered %>%
-  group_by(cluster) %>%
-  summarise(n_DE = n())
-
-ggplot(DE_summary, aes(x = cluster, y = n_DE, fill = cluster)) +
-  
-  geom_bar(stat = "identity") +
-  theme_classic() +
-  labs(title = "Number of DEGs per cluster")+
-  scale_fill_manual(values = colPal_FB)
-
-```
-
-#Transform gene names to short version
-```{r}
-
 DE_all_filtered <- DE_all_filtered %>%
   mutate(
     EnsID_clean = sub("\\..*$", "", gene),   # keep ENSMUSG ID only
     gene_clean  = sub("^[^.]+\\.", "", gene) # keep gene symbol only
   )
-
-
 ```
 
 
-#GSEA Ccl19 FRCs
+# GSEA FALC FRCs
 ```{r, fig.height=8}
 DEGenes_FRC <- DE_all_filtered %>%
   filter(cluster == "Ccl19 FRCs") %>%
@@ -205,10 +163,10 @@ ego_FRC_GSEA <- gseGO(
   verbose = FALSE
 )
 
-#Convert ENSMUS IDs to gene symbols
+# Convert ENSMUS IDs to gene symbols
 ego_FRC_GSEA <- setReadable(ego_FRC_GSEA, OrgDb = org.Mm.eg.db, keyType = "ENSEMBL")
 
-#Filter for significant results
+# Filter for significant results
 ego_FRC_GSEA <- simplify(ego_FRC_GSEA, cutoff= 0.7, by = "p.adjust", select_fun = min)
 ego_FRC_GSEA@result <- ego_FRC_GSEA@result [ego_FRC_GSEA@result$p.adjust < 0.05,]
 
@@ -218,7 +176,7 @@ dotplot(ego_FRC_GSEA, showCategory = 20) +
 
 ```
 
-#dotplot selected pathways FRCs
+# Dotplot selected pathways FALC FRCs
 ```{r}
 #head(ego_FRC_GSEA@result$Description, 20)
 
@@ -236,20 +194,17 @@ sel_FRC <- c(
 ego_fil <- ego_FRC_GSEA@result %>%
   filter(Description %in% sel_FRC)
 
-#Dotplot
-##size = gene count, color = NES
+# Dotplot
 dotplot(ego_FRC_GSEA, showCategory = sel_FRC, color = "p.adjust") +
   ggtitle("Selected GO: Ccl19 FRCs (TCRM vs. LMC)")
-
-
 
 ```
 
 
-#Calculate DE genes per cluster and condition and split the list per condition
-```{r, include = T, eval = F}
+# Calculate DE genes per cluster and condition and split the list per condition
+```{r, include = T, eval = T}
 
-#Set identity
+# Set identity
 Idents(seuratFB) <- seuratFB$FBclusterLabel
 
 clusters <- levels(seuratFB)
@@ -260,20 +215,20 @@ DEgenes_cond_list <- list()
 for (cl in clusters) {
   cat("Processing cluster:", cl, "\n")
   
-  #Subset to this cluster
+  # Subset to this cluster
   sub <- subset(seuratFB, idents = cl)
   
-  #Set condition as identity class
+  # Set condition as identity class
   Idents(sub) <- sub$cond
   
-  #Ensure both conditions exist in this cluster
+  # Ensure both conditions exist in this cluster
   cond_present <- intersect(conditions, levels(Idents(sub)))
   if (length(cond_present) < 2) {
     cat("   Skipping — not both conditions present in", cl, "\n")
     next
   }
   
-  #Differential expression: TCRM vs LMC
+  # Differential expression: TCRM vs LMC
   deg <- FindMarkers(
     sub,
     ident.1 = "TCRM",
@@ -283,7 +238,7 @@ for (cl in clusters) {
     min.pct = 0.1
   )
   
-  #Add gene column and extract EnsID
+  # Add gene column and extract EnsID
   deg <- deg %>%
     tibble::rownames_to_column(var = "gene") %>%
     mutate(
@@ -291,36 +246,43 @@ for (cl in clusters) {
       Cluster = cl
     )
   
-  #Split into condition-specific sets
+  # Split into condition-specific sets
   deg_up_TCRM <- deg %>% filter(avg_log2FC > 0) %>% mutate(Condition = "TCRM")
   deg_up_LMC  <- deg %>% filter(avg_log2FC < 0) %>% mutate(Condition = "LMC")
   
-  #Store
+  # Store
   DEgenes_cond_list[[paste0(cl, "_TCRM")]] <- deg_up_TCRM
   DEgenes_cond_list[[paste0(cl, "_LMC")]]  <- deg_up_LMC
 }
 
-#Combine all results
+# Combine all results
 DEgenes_cond_all <- bind_rows(DEgenes_cond_list)
 
 
-write.table(DEgenes_cond_all,
-            file = paste0(basedir, "/docs/pericarditis_allmerged_FB_cleaned_cL_DEgenes_perCluster_perCondition_individual.txt"),
-            row.names = FALSE, quote = FALSE, sep = "\t", col.names = TRUE)
+#Save DE genes as text file
+basedir<- here()
+basedir <- paste0(basedir, "/docs/")
+write.table(
+  DE_all_filtered,
+  file = paste0(basedir, "pericarditis_allmerged_FB_cleaned_cL_DEgenes_perCluster_perCondition_individual.txt"),
+  row.names = FALSE,
+  quote = FALSE,
+  sep = "\t",
+  col.names = TRUE
+)
 
 ```
 
-#Load DEGenes
-```{r}
 
+```{r, include = F, eval = F}
+# Load DEGenes
 basedir<- here()
 fileNam <- paste0(basedir, "/docs/pericarditis_allmerged_FB_cleaned_cL_DEgenes_perCluster_perCondition_individual.txt")
 DEgenes_cond_all <- read.table(fileNam, header = TRUE, sep = "\t", stringsAsFactors = FALSE)
-
-
 ```
 
-#GSEA for all clusters per condition
+
+# GSEA for all clusters per condition
 ```{r}
 cluster_cond_list <- split(DEgenes_cond_all, list(DEgenes_cond_all$Cluster, DEgenes_cond_all$Condition))
 
@@ -341,9 +303,9 @@ names(ego_list) <- names(cluster_cond_list)
 
 ```
 
-
+# Extract FALC FRC GSEA
 ```{r}
-#Select pathways
+# Select pathways
 sel_FRC <- c(
   "regulation of lymphocyte activation",
   "positive regulation of T cell activation",
@@ -354,7 +316,7 @@ sel_FRC <- c(
   "regulation of leukocyte cell-cell adhesion"
 )
 
-#Combine enrichment results across clusters and conditions
+# Combine enrichment results across clusters and conditions
 plot_df <- do.call(
   rbind,
   lapply(names(ego_list), function(nm) {
@@ -364,7 +326,7 @@ plot_df <- do.call(
 
     df <- ego@result
 
-    #Extract cluster and condition from list name (Cluster.Condition)
+    # Extract cluster and condition from list name
     parts <- strsplit(nm, "\\.")[[1]]
     cluster <- parts[1]
     condition <- parts[2]
@@ -379,18 +341,18 @@ plot_df <- do.call(
   })
 )
 
-#Filter for Ccl19 FRCs and conditions
+# Filter for Ccl19 FRCs and conditions
 plot_df_cluster <- plot_df %>%
   filter(
     Cluster == "Ccl19 FRCs",
     Condition %in% c("LMC", "TCRM")
   )
 
-#Filter
+# Filter
 plot_df_cluster <- plot_df_cluster %>%
   mutate(log10_padj = pmin(log10_padj, 10))
 
-#Order pathways by maximum significance across conditions
+# Order pathways by maximum significance across conditions
 plot_df_cluster <- plot_df_cluster %>%
   group_by(Description) %>%
   mutate(max_log10_padj = max(log10_padj, na.rm = TRUE)) %>%
@@ -401,7 +363,7 @@ plot_df_cluster <- plot_df_cluster %>%
 ```
 
 
-#Heatmap on selected pathways
+# Heatmap on selected pathways
 ```{r}
 # Keep only Ccl19 FRCs
 plot_df_cluster <- plot_df %>%
@@ -412,7 +374,7 @@ plot_df_cluster <- plot_df %>%
  
   mutate(log10_padj = pmin(-log10(p.adjust), 10))
 
-#Order pathways by maximum significance
+# Order pathways by maximum significance
 plot_df_cluster <- plot_df_cluster %>%
   group_by(Description) %>%
   mutate(MaxSig = max(log10_padj, na.rm = TRUE)) %>%
@@ -420,7 +382,7 @@ plot_df_cluster <- plot_df_cluster %>%
   arrange(desc(MaxSig)) %>%
   mutate(Description = factor(Description, levels = unique(Description)))
 
-#Plot heatmap
+# Plot heatmap
 ggplot(
   plot_df_cluster,
   aes(x = Condition, y = Description, fill = log10_padj)
@@ -450,8 +412,7 @@ ggplot(
 ```
 
 
-
-#Session info
+# Session info
 ```{r}
 sessionInfo()
 date()

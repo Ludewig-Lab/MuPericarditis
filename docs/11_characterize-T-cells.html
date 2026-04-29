@@ -11,9 +11,9 @@
 
 <meta name="author" content="Nadine" />
 
-<meta name="date" content="2025-04-09" />
+<meta name="date" content="2026-04-16" />
 
-<title>characterize T cells</title>
+<title>Pericardial T Cells TCRM and Ctrl</title>
 
 <script src="site_libs/header-attrs-2.29/header-attrs.js"></script>
 <script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
@@ -351,9 +351,9 @@ div.tocify {
 
 
 
-<h1 class="title toc-ignore">characterize T cells</h1>
+<h1 class="title toc-ignore">Pericardial T Cells TCRM and Ctrl</h1>
 <h4 class="author">Nadine</h4>
-<h4 class="date">2025-04-09</h4>
+<h4 class="date">2026-04-16</h4>
 
 </div>
 
@@ -382,7 +382,7 @@ aria-hidden="true"></span> </a>
 <div class="tab-content">
 <div id="summary" class="tab-pane fade in active">
 <p>
-<strong>Last updated:</strong> 2025-12-05
+<strong>Last updated:</strong> 2026-04-29
 </p>
 <p>
 <strong>Checks:</strong> <span
@@ -560,6 +560,7 @@ Untracked files:
     Untracked:  analysis/11_characterize T cells.Rmd
     Untracked:  analysis/11_characterize-T-cells.Rmd
     Untracked:  analysis/12_cellchat TCRM vs Ctrl.Rmd
+    Untracked:  analysis/13_T cell FRC merge.Rmd
     Untracked:  analysis/1_merge samples.Rmd
     Untracked:  analysis/2_assign metadata.Rmd
     Untracked:  analysis/3_data cleanup.Rmd
@@ -568,11 +569,12 @@ Untracked files:
     Untracked:  analysis/6_Subset FBs.Rmd
     Untracked:  analysis/7_characterize FBs.Rmd
     Untracked:  analysis/8_FRC Ctrl vs TCRM.Rmd
-    Untracked:  analysis/9_IL6 Ccl19 FRCs.Rmd
+    Untracked:  analysis/9_IL6 FBs.Rmd
 
 Unstaged changes:
     Modified:   .DS_Store
     Modified:   .gitignore
+    Modified:   analysis/index.Rmd
 
 </code></pre>
 <p>
@@ -595,417 +597,648 @@ There are no past versions. Publish this analysis with
 </div>
 </div>
 </div>
-<pre class="r"><code>knitr::opts_chunk$set(warning = FALSE, message = FALSE, dev = c(&quot;png&quot;, &quot;pdf&quot;))
-seed &lt;- 1234</code></pre>
-<p>#load packages</p>
+<div id="load-packages" class="section level1">
+<h1>Load packages</h1>
 <pre class="r"><code>suppressPackageStartupMessages({
-  library(ExploreSCdataSeurat3)
-  library(runSeurat3)
   library(Seurat)
   library(ggpubr)
   library(pheatmap)
-  library(SingleCellExperiment)
   library(dplyr)
   library(tidyverse)
-  library(viridis)
-  library(muscat)
-  library(circlize)
-  library(destiny)
-  library(scater)
-  library(metap)
-  library(multtest)
   library(clusterProfiler)
   library(org.Mm.eg.db)
-  library(msigdbr)
   library(enrichplot)
   library(DOSE)
   library(grid)
-  library(gridExtra)
-  library(ggupset)
-  library(VennDiagram)
-  library(reshape2)
   library(ggplot2)
-  library(cowplot)
-  library(purrr)
   library(here)
-  library(ggsci)
-  library(RColorBrewer)
+  library (tibble)
+  library(scater)
+  library(SingleCellExperiment)
+  library(matrixStats)
 })</code></pre>
-<p>#Load seurat object</p>
-<pre class="r"><code>#Load merged and cleaned object from previous analysis
+</div>
+<div id="load-seurat-object" class="section level1">
+<h1>Load seurat object</h1>
+<pre class="r"><code># Load merged and cleaned object containing T cells
 basedir&lt;- here()
 fileNam &lt;- paste0(basedir, &quot;/data/pericarditis_allmerged_Tcells_cleaned_seurat.rds&quot;)
 seuratT &lt;- readRDS(fileNam)</code></pre>
-<p>#Visualization in umap</p>
-<pre class="r"><code>Idents(seuratT) &lt;-  seuratT$RNA_snn_res.0.1
-DimPlot(seuratT, reduction = &quot;umap&quot;, group.by= &quot;RNA_snn_res.0.1&quot;, label = T)</code></pre>
+<div id="dimplot-clusters" class="section level2 tabset">
+<h2 class="tabset">DimPlot Clusters</h2>
+<div id="resolution-0.1" class="section level3">
+<h3>Resolution 0.1</h3>
+<pre class="r"><code>Idents(seuratT) &lt;-  seuratT$RNA_snn_res.0.25
+DimPlot(seuratT, reduction = &quot;umap&quot;, label = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-3-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="resolution-0.2" class="section level3">
+<h3>Resolution 0.2</h3>
+<pre class="r"><code>Idents(seuratT) &lt;-  seuratT$RNA_snn_res.0.4
+DimPlot(seuratT, reduction = &quot;umap&quot;, label = T)</code></pre>
 <img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-4-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<p>#Marker genes per cluster</p>
-<pre class="r"><code>#Set identity to resolution 0.1
-Idents(seuratT) &lt;-  seuratT$RNA_snn_res.0.1
+</div>
+</div>
+</div>
+<div id="marker-genes-per-cluster" class="section level1">
+<h1>Marker genes per cluster</h1>
+<pre class="r"><code># Set identity to resolution 0.4
+Idents(seuratT) &lt;-  seuratT$RNA_snn_res.0.4
 
-#Run Marker Genes
+# Run marker genes
 seuratT_markers_all &lt;- FindAllMarkers(object = seuratT, assay =&quot;RNA&quot;,
                                      only.pos = TRUE, min.pct = 0.25,
                                      logfc.threshold = 0.25,
                                      test.use = &quot;wilcox&quot;)
 
-#Save marker genes as text file
+# Save marker genes as text file
 basedir&lt;- here()
 basedir &lt;- paste0(basedir, &quot;/docs/&quot;)
 write.table(
   seuratT_markers_all,
-  file = paste0(basedir, &quot;pericarditis_allmerged_Tcells_cleaned_0.1_markerGenes.txt&quot;),
+  file = paste0(basedir, &quot;pericarditis_allmerged_Tcells_cleaned_0.4_markerGenes.txt&quot;),
   row.names = FALSE,
   quote = FALSE,
   sep = &quot;\t&quot;
 )</code></pre>
-<p>#Assign labels to Tcell clusters</p>
-<pre class="r"><code>seuratT$TclusterLabel &lt;- seuratT$RNA_snn_res.0.1
+</div>
+<div id="assign-labels-to-t-cell-clusters" class="section level1">
+<h1>Assign labels to T cell clusters</h1>
+<pre class="r"><code>seuratT$TclusterLabel &lt;- seuratT$RNA_snn_res.0.4
 
 seuratT$TclusterLabel &lt;- &quot;TclusterLabel&quot;
-seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c(&quot;0&quot;))] &lt;- &quot;CD4 Tscm&quot;
-seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c(&quot;1&quot;))] &lt;- &quot;Tem&quot;
-seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c(&quot;2&quot;))] &lt;- &quot;gd Tcell&quot;
-seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c(&quot;3&quot;))] &lt;- &quot;CD8 Tscm&quot;
-seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.1 %in% c(&quot;4&quot;))] &lt;- &quot;NKT&quot;</code></pre>
-<p>#define cluster color palette</p>
-<pre class="r"><code>colPal_T &lt;- c(&quot;#CDCDC1&quot;,&quot;#CDC673&quot;, &quot;#CD6600&quot; ,&quot;#8B3E2F&quot;,&quot;#2F4F4F&quot; )
-names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;Tem&quot;, &quot;gd Tcell&quot;, &quot;NKT&quot;, &quot;CD8 Tscm&quot;)
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;0&quot;))] &lt;- &quot;CD4 Tscm&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;1&quot;))] &lt;- &quot;CD4 Tem&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;2&quot;))] &lt;- &quot;CD4 Teff&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;3&quot;))] &lt;- &quot;gdTcell-1&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;4&quot;))] &lt;- &quot;CD8 Tscm&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;5&quot;))] &lt;- &quot;gdTcell-2&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;6&quot;))] &lt;- &quot;NKTcell&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;7&quot;))] &lt;- &quot;CD8 Teff&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;8&quot;))] &lt;- &quot;Tregs&quot;
+seuratT$TclusterLabel[which(seuratT$RNA_snn_res.0.4 %in% c(&quot;9&quot;))] &lt;- &quot;CD4 Tcm&quot;</code></pre>
+</div>
+<div id="define-color-palette" class="section level1">
+<h1>Define color palette</h1>
+<pre class="r"><code># Color palette TclusterLabel
+colPal_T &lt;- c(&quot;#CDCDC1&quot;,  &quot;#8C8C82&quot;, &quot;#A3B18A&quot;,&quot;#B5522A&quot; ,  &quot;#2F4F4F&quot; , &quot;#CD6600&quot;,  &quot;#2B2B2B&quot; ,&quot;#8B3E2F&quot;  , &quot;#CDC673&quot;,  &quot;#2C3E70&quot;)
+names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;gdTcell-1&quot;, &quot;CD8 Tscm&quot;, &quot;gdTcell-2&quot;, &quot;NKTcell&quot;, &quot;CD8 Teff&quot;, &quot;Tregs&quot;, &quot;CD4 Tcm&quot;)
 
+# Color palette Phenotypes
 colPal_Phenotype &lt;- c(&quot;#8B0000&quot;, &quot;#FCDACB&quot;, &quot;#E6E6E6&quot;)
 names(colPal_Phenotype) &lt;- c( &quot;iCMP&quot;, &quot;inflamed&quot;, &quot;healthy&quot;)</code></pre>
-<p>#Stats</p>
+</div>
+<div id="metrics" class="section level1">
+<h1>Metrics</h1>
 <pre class="r"><code>table(seuratT$orig.ident)</code></pre>
 <pre><code>
       
 17982 </code></pre>
-<pre class="r"><code>table(seuratT$TclusterLabel)</code></pre>
-<pre><code>
-CD4 Tscm CD8 Tscm gd Tcell      NKT      Tem 
-    8749     1235     2645     1145     4208 </code></pre>
-<pre class="r"><code>table(seuratT$TclusterLabel, seuratT$cond)</code></pre>
-<pre><code>          
-            LMC TCRM
-  CD4 Tscm 1283 7466
-  CD8 Tscm 1134  101
-  gd Tcell 2391  254
-  NKT       946  199
-  Tem      1895 2313</code></pre>
-<pre class="r"><code>table(seuratT$Phenotype)</code></pre>
-<pre><code>
- healthy     iCMP inflamed 
-    7649     3701     6632 </code></pre>
 <pre class="r"><code>table(seuratT$cond)</code></pre>
 <pre><code>
   LMC  TCRM 
  7649 10333 </code></pre>
-<pre class="r"><code>table(seuratT$TclusterLabel, seuratT$SampleName)</code></pre>
-<pre><code>          
-           4w_LMC1 4w_LMC2 4w_LMC3 4w_LMC4 4w_TCRM1 4w_TCRM2 4w_TCRM3 4w_TCRM4
-  CD4 Tscm     331     117      54      64      973       87     1200      295
-  CD8 Tscm     235      93      28      53        7        8       25        9
-  gd Tcell      94     177     130     167        8       18       25       25
-  NKT          177      70      79      56        2       16       24       16
-  Tem          492      61      66      68       63       71      236       91
-          
-           4w_TCRM5 4w_TCRM6 4w_TCRM7 8w_LMC1 8w_LMC2 8w_LMC3 8w_LMC4 8w_LMC5
-  CD4 Tscm      580      338      556      89     133     184      55      86
-  CD8 Tscm        6        0        2      95     150     247      42      75
-  gd Tcell       44       16       20     206     251     311     350     149
-  NKT            16       14       31      96     115     102      51      63
-  Tem           225      145      144     173     212     234     135     170
-          
-           8w_LMC6 8w_LMC7 8w_TCRM1 8w_TCRM2 8w_TCRM3 8w_TCRM4 8w_TCRM5
-  CD4 Tscm     139      31      934      180     1566      440       95
-  CD8 Tscm      97      19       23        2        0        5        5
-  gd Tcell     239     317       62        2        8        9        8
-  NKT           80      57       13        6       21       32        4
-  Tem          205      79      261      186      311      391      126
-          
-           8w_TCRM6 8w_TCRM7 8w_TCRM8
-  CD4 Tscm      220        2        0
-  CD8 Tscm        9        0        0
-  gd Tcell        9        0        0
-  NKT             4        0        0
-  Tem            62        0        1</code></pre>
-<p>#DimPlot TclusterLabel</p>
+<pre class="r"><code>table(seuratT$Phenotype)</code></pre>
+<pre><code>
+ healthy     iCMP inflamed 
+    7649     3701     6632 </code></pre>
+<pre class="r"><code>table(seuratT$TclusterLabel)</code></pre>
+<pre><code>
+  CD4 Tcm  CD4 Teff   CD4 Tem  CD4 Tscm  CD8 Teff  CD8 Tscm gdTcell-1 gdTcell-2 
+       77      2326      2497      6161      1007      1245      1468      1175 
+  NKTcell     Tregs 
+     1158       868 </code></pre>
+<pre class="r"><code>table(seuratT$TclusterLabel, seuratT$cond)</code></pre>
+<pre><code>           
+             LMC TCRM
+  CD4 Tcm      4   73
+  CD4 Teff   994 1332
+  CD4 Tem     96 2401
+  CD4 Tscm  1181 4980
+  CD8 Teff   632  375
+  CD8 Tscm  1138  107
+  gdTcell-1 1375   93
+  gdTcell-2 1015  160
+  NKTcell    950  208
+  Tregs      264  604</code></pre>
+<div id="dimplot-clusters-1" class="section level2 tabset">
+<h2 class="tabset">DimPlot Clusters</h2>
+<div id="fbclusterlabel" class="section level3">
+<h3>FBclusterLabel</h3>
 <pre class="r"><code>Idents(seuratT) &lt;-  seuratT$TclusterLabel
-
 DimPlot(seuratT, reduction = &quot;umap&quot;, cols=colPal_T, group.by= &quot;TclusterLabel&quot;)</code></pre>
 <img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=colPal_T, label = F, group.by= &quot;TclusterLabel&quot;, split.by = &quot;cond&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-9-2.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<p>#DimPlot Condition</p>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), group.by = &quot;cond&quot;)</code></pre>
+<div id="condition-split" class="section level3">
+<h3>Condition split</h3>
+<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=colPal_T, label = F, group.by= &quot;TclusterLabel&quot;, split.by = &quot;cond&quot;)</code></pre>
 <img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), group.by = &quot;cond&quot;, split.by = &quot;cond&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-10-2.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<p>#DimPlot Phenotype</p>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=colPal_Phenotype, group.by = &quot;Phenotype&quot;)</code></pre>
+</div>
+<div id="feature-plot" class="section level2 tabset">
+<h2 class="tabset">Feature plot</h2>
+<div id="cd3e" class="section level3">
+<h3>Cd3e</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000032093.Cd3e&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
 <img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, group.by = &quot;Phenotype&quot;, cols = colPal_Phenotype, order = c(&quot;iCMP&quot;, &quot;inflamed&quot;,&quot;healthy&quot;), pt.size = 0.02)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-11-2.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#E6E6E6&quot;,&quot;#E6E6E6&quot;,&quot;#FCDACB&quot;), group.by = &quot;Phenotype&quot;, order = &quot;inflamed&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-11-3.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#E6E6E6&quot;,&quot;#E6E6E6&quot;,&quot;#8B0000&quot;), group.by = &quot;Phenotype&quot;, order = &quot;iCMP&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-11-4.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#DimPlot Age</p>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#99B898&quot;, &quot;#628395&quot;), group.by = &quot;age&quot;, split.by = &quot;age&quot;)</code></pre>
+<div id="cd4" class="section level3">
+<h3>Cd4</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000023274.Cd4&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
 <img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#D3D3D3&quot;, &quot;#628395&quot;), group.by = &quot;age&quot;, order = &quot;8wk&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-12-2.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#D3D3D3&quot;, &quot;#99B898&quot;), group.by = &quot;age&quot;, order = &quot;4wk&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-12-3.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<pre class="r"><code>DimPlot(seuratT, reduction = &quot;umap&quot;, cols=c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), group.by = &quot;cond&quot;, split.by = &quot;age&quot;)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-12-4.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<div id="feature-plots---t-cell-identity" class="section level1">
-<h1>Feature plots - T cell identity</h1>
-<pre class="r"><code>#genes &lt;- data.frame(gene=rownames(seuratT))
-
-
-genes_sel &lt;- c(
-  &quot;ENSMUSG00000032093.Cd3e&quot;,
-  &quot;ENSMUSG00000023274.Cd4&quot;,
-  &quot;ENSMUSG00000031004.Mki67&quot;,
-  &quot;ENSMUSG00000000782.Tcf7&quot;,
-  &quot;ENSMUSG00000037944.Ccr7&quot;,
-  &quot;ENSMUSG00000000409.Lck&quot;,
-  &quot;ENSMUSG00000026581.Sell&quot;,
-  &quot;ENSMUSG00000005087.Cd44&quot;,
-  &quot;ENSMUSG00000003882.Il7r&quot;,
-  &quot;ENSMUSG00000055170.Ifng&quot;,
-  &quot;ENSMUSG00000024778.Fas&quot;,
-  &quot;ENSMUSG00000020644.Id2&quot;,
-  &quot;ENSMUSG00000104876.Trdc&quot;,
-  &quot;ENSMUSG00000076749.Trgc1&quot;,
-  &quot;ENSMUSG00000076490.Trbc1&quot;,
-  &quot;ENSMUSG00000066687.Zbtb16&quot;,
-  &quot;ENSMUSG00000049093.Il23r&quot;,
-  &quot;ENSMUSG00000023132.Gzma&quot;,
-  &quot;ENSMUSG00000027947.Il6ra&quot;,
-  &quot;ENSMUSG00000025929.Il17a&quot;,
-  &quot;ENSMUSG00000021756.Il6st&quot;,
-  &quot;ENSMUSG00000053977.Cd8a&quot;
-)
-
-
-plots &lt;- lapply(genes_sel, function(gene) {
-  FeaturePlot(
-    object = seuratT,
-    features = gene,
-    cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;),
-    reduction = &quot;umap&quot;, order = T
-  )
-})
-
-for (p in plots) print(p)</code></pre>
+<div id="cd8a" class="section level3">
+<h3>Cd8a</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000053977.Cd8a&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
 <img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-2.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="tcf7" class="section level3">
+<h3>Tcf7</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000000782.Tcf7&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-3.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="id2" class="section level3">
+<h3>Id2</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000020644.Id2&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-4.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="ccr7" class="section level3">
+<h3>Ccr7</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000037944.Ccr7&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-16-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-5.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="sell" class="section level3">
+<h3>Sell</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000026581.Sell&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-17-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-6.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="cd44" class="section level3">
+<h3>Cd44</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000005087.Cd44&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-18-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-7.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="fas" class="section level3">
+<h3>Fas</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000024778.Fas&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-19-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-8.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="pdcd1" class="section level3">
+<h3>Pdcd1</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000026285.Pdcd1&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-20-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-9.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="ifng" class="section level3">
+<h3>Ifng</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features =  &quot;ENSMUSG00000055170.Ifng&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-21-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-10.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="il17a" class="section level3">
+<h3>Il17a</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000025929.Il17a&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-22-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-11.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="mki67" class="section level3">
+<h3>Mki67</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000031004.Mki67&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-23-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-12.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="foxp3" class="section level3">
+<h3>Foxp3</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000039521.Foxp3&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-24-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-13.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="trgc1" class="section level3">
+<h3>Trgc1</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features =  &quot;ENSMUSG00000076749.Trgc1&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-25-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-14.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="zbtb16" class="section level3">
+<h3>Zbtb16</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000066687.Zbtb16&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-26-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-15.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="gzma" class="section level3">
+<h3>Gzma</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000023132.Gzma&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-27-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-16.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="il6ra" class="section level3">
+<h3>Il6ra</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000027947.Il6ra&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-28-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-17.png" width="672" style="display: block; margin: auto;" />
+</div>
+<div id="gzma-1" class="section level3">
+<h3>Gzma</h3>
+<pre class="r"><code>FeaturePlot(object = seuratT, features = &quot;ENSMUSG00000021756.Il6st&quot;, cols = c(&quot;#C1CDCD&quot;, &quot;#800000&quot;), reduction = &quot;umap&quot;, order = T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-29-1.png" width="672" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-18.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-19.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-20.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-21.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-13-22.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Marker genes per cluster</p>
-<pre class="r"><code>#Set identity to TclusterLabel
+<div id="marker-genes-per-cluster-1" class="section level1">
+<h1>Marker genes per cluster</h1>
+<pre class="r"><code># Set identity to TclusterLabel
 Idents(seuratT) &lt;-  seuratT$TclusterLabel
 
-#Run Marker Genes
+# Run marker genes
 seuratT_markers_all &lt;- FindAllMarkers(object = seuratT, assay =&quot;RNA&quot;,
                                      only.pos = TRUE, min.pct = 0.25,
                                      logfc.threshold = 0.25,
                                      test.use = &quot;wilcox&quot;)
 
-#Save marker genes as text file
+# Save marker genes as text file
 basedir&lt;- here()
 basedir &lt;- paste0(basedir, &quot;/docs/&quot;)
 write.table(
   seuratT_markers_all,
-  file = paste0(basedir, &quot;pericarditis_allmerged_Tcells_cleaned_0.1_cL_markerGenes.txt&quot;),
+  file = paste0(basedir, &quot;pericarditis_allmerged_Tcells_cleaned_0.4_cL_markerGenes.txt&quot;),
   row.names = FALSE,
   quote = FALSE,
   sep = &quot;\t&quot;
 )</code></pre>
-<p>#Load MarkerGenes</p>
-<pre class="r"><code>basedir&lt;- here()
-fileNam &lt;- paste0(basedir, &quot;/docs/pericarditis_allmerged_Tcells_cleaned_0.1_cL_markerGenes.txt&quot;)
-seuratT_MarkerGenes &lt;- read.table(fileNam, header = TRUE, sep = &quot;\t&quot;, stringsAsFactors = FALSE)</code></pre>
-<p>#Average heatmap function</p>
-<pre class="r"><code>avgHeatmap &lt;- function(seuratT, selGenes, colVecIdent, colVecCond=NULL,
+<div id="dotplot-of-selected-marker-genes"
+class="section level2 tabset">
+<h2 class="tabset">Dotplot of selected marker genes</h2>
+<div id="dotplot-of-selected-marker-genes-unordered"
+class="section level3">
+<h3>Dotplot of selected marker genes (unordered)</h3>
+<pre class="r"><code>Idents(seuratT) &lt;- seuratT$TclusterLabel
+
+#Marker genes as simple vector
+selMarker &lt;-selMarker &lt;- c(&quot;Cd3e&quot;, &quot;Cd4&quot;, &quot;Cd8a&quot;, &quot;Zbtb16&quot;, &quot;Sell&quot;, &quot;Cd44&quot;, &quot;Id2&quot;, &quot;Foxp3&quot;, &quot;Tcf7&quot;, &quot;Ccr7&quot;, &quot;Nkg7&quot;, &quot;S1pr1&quot;, &quot;Lef1&quot;, &quot;Trac&quot;, &quot;Klrd1&quot;, &quot;Ncr1&quot;, &quot;Ccl5&quot;, &quot;Eomes&quot;, &quot;Trgc1&quot;, &quot;Il23r&quot;, &quot;Cd28&quot;)
+
+#Assign a full gene name to the short geneID
+genes &lt;- data.frame(gene=rownames(seuratT)) %&gt;% mutate(geneID=gsub(&quot;.*\\.&quot;, &quot;&quot;, gene)) %&gt;% 
+  filter(geneID %in% as.character(selMarker)) %&gt;% arrange(factor(geneID, levels = rev(selMarker)))
+
+#Create dataframe of cL
+clusterDat &lt;- data.frame(cluster=levels(seuratT)) %&gt;%
+  mutate(label = levels(seuratT))
+
+
+#Scale the gene across all clusters
+DotPlot(
+  object=seuratT,
+  features = genes$gene,
+  cols = c(&quot;#2C3E50&quot;, &quot;#F1E6A1&quot;),
+  col.min = -2.5,
+  col.max = 2.5,
+  dot.min = 0,
+  dot.scale = 6,
+  idents = NULL,
+  group.by = NULL,
+  split.by = NULL,
+  cluster.idents = T, #TRUE= automatic order, FALSE= ordered 
+  scale = T,
+  scale.by = &quot;radius&quot;,
+  scale.min = NA,
+  scale.max = NA
+) + coord_flip() + scale_x_discrete(breaks=genes$gene, labels=genes$geneID)  + scale_y_discrete(breaks=clusterDat$cluster, labels=clusterDat$label) + theme(axis.text.x = element_text(angle = 90))</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-32-1.png" width="480" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="dotplot-of-selected-marker-genes-ordered"
+class="section level3">
+<h3>Dotplot of selected marker genes (ordered)</h3>
+<pre class="r"><code># Set cluster order
+ordVec &lt;-  c(&quot;CD4 Tscm&quot;, &quot;CD4 Tcm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;Tregs&quot;, &quot;CD8 Tscm&quot;, &quot;CD8 Teff&quot;, &quot;gdTcell-1&quot;,  &quot;gdTcell-2&quot;, &quot;NKTcell&quot;)
+
+# Set identities
+Idents(seuratT) &lt;- seuratT$TclusterLabel
+Idents(seuratT) &lt;- factor(Idents(seuratT), levels = ordVec)
+
+# Marker genes as simple vector
+selMarker &lt;-selMarker &lt;- c(&quot;Cd3e&quot;, &quot;Cd4&quot;, &quot;Cd8a&quot;, &quot;Zbtb16&quot;, &quot;Sell&quot;, &quot;Cd44&quot;, &quot;Id2&quot;, &quot;Foxp3&quot;, &quot;Tcf7&quot;, &quot;Ccr7&quot;, &quot;Nkg7&quot;, &quot;S1pr1&quot;, &quot;Lef1&quot;, &quot;Trac&quot;, &quot;Klrd1&quot;, &quot;Ncr1&quot;, &quot;Ccl5&quot;, &quot;Eomes&quot;, &quot;Trgc1&quot;, &quot;Il23r&quot;, &quot;Cd28&quot;)
+
+# Assign a full gene name to the short geneID
+genes &lt;- data.frame(gene=rownames(seuratT)) %&gt;% mutate(geneID=gsub(&quot;.*\\.&quot;, &quot;&quot;, gene)) %&gt;% 
+  filter(geneID %in% as.character(selMarker)) %&gt;% arrange(factor(geneID, levels = rev(selMarker)))
+
+# Scale the gene across all clusters
+DotPlot(
+  object        = seuratT,
+  features      = genes$gene,
+  cols          = c(&quot;#2C3E50&quot;, &quot;#F1E6A1&quot;),
+  col.min       = -2.5,
+  col.max       =  2.5,
+  dot.min       = 0,
+  dot.scale     = 6,
+  cluster.idents = TRUE,
+  scale         = TRUE,
+  scale.by      = &quot;radius&quot;
+) +
+  coord_flip() + scale_x_discrete(breaks = genes$gene,labels = genes$geneID) + scale_y_discrete(limits = ordVec) + theme(axis.text.x = element_text(angle = 90))</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-33-1.png" width="480" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+</div>
+<div id="effector-t-cell-signatures" class="section level2 tabset">
+<h2 class="tabset">Effector T cell signatures</h2>
+<div id="th17-signature" class="section level3">
+<h3>Th17 signature</h3>
+<pre class="r"><code># Th17 gene signature
+Th17_genes &lt;- c(&quot;Il17a&quot;, &quot;Il17f&quot;, &quot;Rorc&quot;, &quot;Stat3&quot;)
+
+# Convert seuratT object to sce object
+sceTh17 &lt;- as.SingleCellExperiment(seuratT)
+
+# Match genes in dataset
+gene_map &lt;- data.frame(
+  geneID = rownames(sceTh17),
+  gene = sub(&quot;.*\\.&quot;, &quot;&quot;, rownames(sceTh17))
+)
+
+signGenes &lt;- gene_map$geneID[gene_map$gene %in% Th17_genes]
+
+# Module score (average expression)
+expr &lt;- assay(sceTh17, &quot;logcounts&quot;)[signGenes, , drop = FALSE]
+
+
+sceTh17$Th17_score &lt;- colMeans(expr)
+
+# Z-score the module
+sceTh17$Th17_z &lt;- as.numeric(scale(sceTh17$Th17_score))
+
+lims &lt;- quantile(sceTh17$Th17_z, c(0.01, 0.99), na.rm = TRUE)
+sceTh17$Th17_z_clipped &lt;- pmin(pmax(sceTh17$Th17_z, lims[1]), lims[2])
+
+# Order positive cells on top
+ord &lt;- order(sceTh17$Th17_z_clipped)
+
+# Plot umap
+plotUMAP(
+  sceTh17[, ord],
+  color_by = &quot;Th17_z_clipped&quot;,
+  point_size = 0.5
+)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-34-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="th1-signature" class="section level3">
+<h3>Th1 signature</h3>
+<pre class="r"><code># Th1 gene signature
+Th1_genes &lt;- c(&quot;Ifng&quot;, &quot;Tbx21&quot;, &quot;Stat4&quot;, &quot;Stat1&quot;)
+
+# Convert seuratT object to sce object
+sceTh1 &lt;- as.SingleCellExperiment(seuratT)
+
+# Match genes in dataset
+gene_map &lt;- data.frame(
+  geneID = rownames(sceTh1),
+  gene = sub(&quot;.*\\.&quot;, &quot;&quot;, rownames(sceTh1))
+)
+
+signGenes &lt;- gene_map$geneID[gene_map$gene %in% Th1_genes]
+
+# Module score (average expression)
+expr &lt;- assay(sceTh1, &quot;logcounts&quot;)[signGenes, , drop = FALSE]
+
+
+sceTh1$Th1_score &lt;- colMeans(expr)
+
+# Z-score the module
+sceTh1$Th1_z &lt;- as.numeric(scale(sceTh1$Th1_score))
+
+lims &lt;- quantile(sceTh1$Th1_z, c(0.01, 0.99), na.rm = TRUE)
+sceTh1$Th1_z_clipped &lt;- pmin(pmax(sceTh1$Th1_z, lims[1]), lims[2])
+
+# Order positive cells on top
+ord &lt;- order(sceTh1$Th1_z_clipped)
+
+# Plot umap
+plotUMAP(
+  sceTh1[, ord],
+  color_by = &quot;Th1_z_clipped&quot;,
+  point_size = 0.5
+)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-35-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+</div>
+<div id="cluster-abundances" class="section level2">
+<h2>Cluster abundances</h2>
+<div id="conditions" class="section level3">
+<h3>Conditions</h3>
+<pre class="r"><code># Plot abundance of clusters across Conditions
+datList &lt;- list()
+for(con in unique(seuratT$cond)){
+  seuratTSub &lt;- subset(seuratT, cond==con)
+  dat_con &lt;- as.data.frame(table(seuratTSub$TclusterLabel)) %&gt;%
+  mutate(percent=Freq/ncol(seuratTSub)) %&gt;% mutate(cond=con)
+  datList[[con]] &lt;- dat_con
+}
+dat_all &lt;- do.call(&quot;rbind&quot;, datList)
+
+# Set cluster order
+ordY &lt;-  c(&quot;CD4 Tscm&quot;, &quot;CD4 Tcm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;Tregs&quot;, &quot;CD8 Tscm&quot;, &quot;CD8 Teff&quot;, &quot;gdTcell-1&quot;,  &quot;gdTcell-2&quot;, &quot;NKTcell&quot;)
+dat_all$Var1 &lt;- factor(dat_all$Var1, levels = ordY)
+
+
+# Barplot with Conditions on x axis and cluster colors
+ggbarplot(dat_all, x= &quot;cond&quot;, y= &quot;percent&quot;, fill = &quot;Var1&quot;, legend = &quot;right&quot;, legend.titel = &quot;cluster&quot;, ylab = &quot;frequency&quot;)+ scale_fill_manual(values = colPal_T)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-36-1.png" width="384" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+</div>
+<div id="violin-plots-per-cluster" class="section level2 tabset">
+<h2 class="tabset">Violin plots per cluster</h2>
+<div id="il6" class="section level3">
+<h3>Il6</h3>
+<pre class="r"><code>genes &lt;- data.frame(gene=rownames(seuratT))
+# Gene expression across all cluster
+Idents(seuratT) &lt;- seuratT$TclusterLabel
+
+colPal_T &lt;- c(&quot;#CDCDC1&quot;,  &quot;#8C8C82&quot;, &quot;#A3B18A&quot;,&quot;#B5522A&quot; ,  &quot;#2F4F4F&quot; , &quot;#CD6600&quot;,  &quot;#2B2B2B&quot; ,&quot;#8B3E2F&quot;  , &quot;#CDC673&quot;,  &quot;#2C3E70&quot;)
+names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;gdTcell-1&quot;, &quot;CD8 Tscm&quot;, &quot;gdTcell-2&quot;, &quot;NKTcell&quot;, &quot;CD8 Teff&quot;, &quot;Tregs&quot;, &quot;CD4 Tcm&quot;)
+
+# Set sample order
+ordX &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tcm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;Tregs&quot;, &quot;CD8 Tscm&quot;, &quot;CD8 Teff&quot;, &quot;gdTcell-1&quot;,  &quot;gdTcell-2&quot;, &quot;NKTcell&quot;)
+
+# Violin plot
+VlnPlot(object = seuratT, features = &quot;ENSMUSG00000025746.Il6&quot;, cols = colPal_T, alpha = 0.05) + scale_x_discrete(limits = ordX)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-37-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="il6ra-1" class="section level3">
+<h3>Il6ra</h3>
+<pre class="r"><code>VlnPlot(object = seuratT, features = &quot;ENSMUSG00000027947.Il6ra&quot;, cols = colPal_T, alpha = 0.05) + scale_x_discrete(limits = ordX)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-38-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="il6st" class="section level3">
+<h3>Il6st</h3>
+<pre class="r"><code>VlnPlot(object = seuratT, features = &quot;ENSMUSG00000021756.Il6st&quot;, cols = colPal_T, alpha = 0.05) + scale_x_discrete(limits = ordX)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-39-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+</div>
+<div id="violin-plots-split-by-condition" class="section level2 tabset">
+<h2 class="tabset">Violin plots split by condition</h2>
+<div id="il6-1" class="section level3">
+<h3>Il6</h3>
+<pre class="r"><code>VlnPlot(object = seuratT, features = &quot;ENSMUSG00000025746.Il6&quot;, cols = c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), split.by = &quot;cond&quot;, split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-40-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="il6ra-2" class="section level3">
+<h3>Il6ra</h3>
+<pre class="r"><code>VlnPlot(object = seuratT, features = &quot;ENSMUSG00000027947.Il6ra&quot;, cols = c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), split.by = &quot;cond&quot;, split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-41-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+<div id="il6st-1" class="section level3">
+<h3>Il6st</h3>
+<pre class="r"><code>VlnPlot(object = seuratT, features = &quot;ENSMUSG00000021756.Il6st&quot;, cols = c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), split.by = &quot;cond&quot;, split.plot = TRUE, alpha = 0.1) + scale_x_discrete(limits = ordX)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-42-1.png" width="672" style="display: block; margin: auto;" />
+<div class="alert alert-warning">
+<strong>Warning!</strong> The custom <code>fig.path</code> you set was
+ignored by workflowr.
+</div>
+</div>
+</div>
+</div>
+<div id="load-average-heatmap-function" class="section level1">
+<h1>Load average heatmap function</h1>
+<pre class="r"><code>avgHeatmap &lt;- function(seuratFB, selGenes, colVecIdent, colVecCond=NULL,
                        ordVec=NULL, gapVecR=NULL, gapVecC=NULL,cc=FALSE,
                        cr=FALSE, condCol=FALSE){
   
   selGenes &lt;- selGenes$gene
   
   ## assay data
-  clusterAssigned &lt;- as.data.frame(Idents(seuratT)) %&gt;%
+  clusterAssigned &lt;- as.data.frame(Idents(seuratFB)) %&gt;%
   dplyr::mutate(cell=rownames(.))
   colnames(clusterAssigned)[1] &lt;- &quot;ident&quot;
-  seuratTDat &lt;- GetAssayData(seuratT)
+  seuratFBDat &lt;- GetAssayData(seuratFB)
   
   ## genes of interest
-  genes &lt;- data.frame(gene=rownames(seuratT)) %&gt;% 
+  genes &lt;- data.frame(gene=rownames(seuratFB)) %&gt;% 
     mutate(geneID=gsub(&quot;^.*\\.&quot;, &quot;&quot;, gene)) %&gt;% filter(geneID %in% selGenes)
 
   ## matrix with averaged cnts per ident
   logNormExpres &lt;- as.data.frame(t(as.matrix(
-    seuratTDat[which(rownames(seuratTDat) %in% genes$gene),])))
+    seuratFBDat[which(rownames(seuratFBDat) %in% genes$gene),])))
   logNormExpres &lt;- logNormExpres %&gt;% dplyr::mutate(cell=rownames(.)) %&gt;%
     dplyr::left_join(.,clusterAssigned, by=c(&quot;cell&quot;)) %&gt;%
     dplyr::select(-cell) %&gt;% dplyr::group_by(ident) %&gt;%
@@ -1040,7 +1273,7 @@ seuratT_MarkerGenes &lt;- read.table(fileNam, header = TRUE, sep = &quot;\t&quot
   ## adjust order
   logNormExpresMa &lt;- logNormExpresMa[selGenes,]
   if(is.null(ordVec)){
-    ordVec &lt;- levels(seuratT)
+    ordVec &lt;- levels(seuratFB)
   }
   logNormExpresMa &lt;- logNormExpresMa[,ordVec]
 
@@ -1051,285 +1284,80 @@ seuratT_MarkerGenes &lt;- read.table(fileNam, header = TRUE, sep = &quot;\t&quot
          annotation_col = annotation_col, cellwidth=15, cellheight=10,
          annotation_colors = ann_colors, gaps_row = gapVecR, gaps_col = gapVecC)
 }</code></pre>
-<p>#top 10 marker genes per cluster</p>
-<pre class="r"><code>cluster &lt;- levels(seuratT)
-selGenesAll &lt;- seuratT_MarkerGenes %&gt;% group_by(cluster) %&gt;% 
-  top_n(-10, p_val_adj) %&gt;% 
-  top_n(10, avg_log2FC)
-names(selGenesAll) [names(selGenesAll) == &quot;gene&quot;] &lt;- &quot;Gene&quot;
-selGenesAll &lt;- selGenesAll %&gt;% mutate(gene=gsub(&quot;^.*\\.&quot;, &quot;&quot;, Gene)) %&gt;% filter(nchar(Gene)&gt;1)
+<div id="all-t-cells" class="section level3">
+<h3>all T cells</h3>
+<pre class="r"><code>#genes &lt;- data.frame(gene=rownames(seuratT))
 
-colPal_T &lt;- c(&quot;#CDCDC1&quot;,&quot;#CDC673&quot;, &quot;#CD6600&quot; ,&quot;#8B3E2F&quot;,&quot;#2F4F4F&quot; )
-names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;Tem&quot;, &quot;gd Tcell&quot;, &quot;NKT&quot;, &quot;CD8 Tscm&quot;)
-
-ordVec &lt;- names(colPal_T)
-
+selMarker &lt;- list(stroma = c(&quot;Il17a&quot;, &quot;Il17f&quot;, &quot;Rorc&quot;, &quot;Stat3&quot;, &quot;Ifng&quot;, &quot;Tbx21&quot;, &quot;Stat4&quot;, &quot;Stat1&quot;, &quot;Foxp3&quot;))
+    
 Idents(seuratT) &lt;- seuratT$TclusterLabel
-pOut &lt;- avgHeatmap(seurat = seuratT, selGenes = selGenesAll,
+
+selGenes &lt;- data.frame(gene=unlist(selMarker)) %&gt;%
+  rownames_to_column(var=&quot;grp&quot;) %&gt;% mutate(Grp=gsub(&quot;_.*&quot;, &quot;&quot;, grp))
+grpCnt &lt;- selGenes %&gt;% group_by(Grp) %&gt;% summarise(cnt=n())
+gapR &lt;- data.frame(Grp=unique(selGenes$Grp)) %&gt;% 
+  left_join(.,grpCnt, by=&quot;Grp&quot;) %&gt;% mutate(cumSum=cumsum(cnt)) 
+
+
+colPal_T &lt;- c(&quot;#CDCDC1&quot;,  &quot;#8C8C82&quot;, &quot;#A3B18A&quot;,&quot;#B5522A&quot; ,  &quot;#2F4F4F&quot; , &quot;#CD6600&quot;,  &quot;#2B2B2B&quot; ,&quot;#8B3E2F&quot;  , &quot;#CDC673&quot;,  &quot;#2C3E70&quot;)
+names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;gdTcell-1&quot;, &quot;CD8 Tscm&quot;, &quot;gdTcell-2&quot;, &quot;NKTcell&quot;, &quot;CD8 Teff&quot;, &quot;Tregs&quot;, &quot;CD4 Tcm&quot;)
+
+ordVec &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tcm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;Tregs&quot;, &quot;CD8 Tscm&quot;, &quot;CD8 Teff&quot;, &quot;gdTcell-1&quot;,  &quot;gdTcell-2&quot;, &quot;NKTcell&quot;)
+
+
+pOut &lt;- avgHeatmap(seurat = seuratT, selGenes = selGenes,
                   colVecIdent = colPal_T, 
                   ordVec=ordVec,
                   gapVecR=NULL, gapVecC=NULL,cc=F,
                   cr=T, condCol=F)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-16-1.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Dotplot of selected marker genes</p>
-<pre class="r"><code>Idents(seuratT) &lt;- seuratT$TclusterLabel
-
-#Marker genes as simple vector
-selMarker &lt;- c(&quot;Cd3e&quot;, &quot;Cd4&quot;, &quot;Cd8a&quot;, &quot;Zbtb16&quot;, &quot;Sell&quot;, &quot;Cd44&quot;, &quot;Id2&quot;,  &quot;Klrd1&quot;, &quot;Foxp3&quot;, &quot;Tcf7&quot;)
-
-#Assign a full gene name to the short geneID
-genes &lt;- data.frame(gene=rownames(seuratT)) %&gt;% mutate(geneID=gsub(&quot;.*\\.&quot;, &quot;&quot;, gene)) %&gt;% 
-  filter(geneID %in% as.character(selMarker)) %&gt;% arrange(factor(geneID, levels = rev(selMarker)))
-
-#Create dataframe of cL
-clusterDat &lt;- data.frame(cluster=levels(seuratT)) %&gt;%
-  mutate(label = levels(seuratT))
-
-
-#Scale the gene across all clusters
-DotPlot(
-  object=seuratT,
-  features = genes$gene,
-  cols = c(&quot;#2C3E50&quot;, &quot;#F1E6A1&quot;),
-  col.min = -2.5,
-  col.max = 2.5,
-  dot.min = 0,
-  dot.scale = 6,
-  idents = NULL,
-  group.by = NULL,
-  split.by = NULL,
-  cluster.idents = T, #TRUE= automatic order, FALSE= ordered 
-  scale = T,
-  scale.by = &quot;radius&quot;,
-  scale.min = NA,
-  scale.max = NA
-) + coord_flip() + scale_x_discrete(breaks=genes$gene, labels=genes$geneID)  + scale_y_discrete(breaks=clusterDat$cluster, labels=clusterDat$label) + theme(axis.text.x = element_text(angle = 90))</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-17-1.png" width="432" style="display: block; margin: auto;" />
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-43-1.png" width="480" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
 </div>
-<div id="t-cell-activation-across-conditions-per-cluster"
-class="section level1">
-<h1>T cell activation across conditions per cluster</h1>
-<pre class="r"><code>#Define cluster-condition label
-seuratT$cluster_cond &lt;- paste0(seuratT$TclusterLabel, &quot;_&quot;, seuratT$cond)
-
-#Define color palette for clusters
-colPal_T &lt;- c(&quot;#CDCDC1&quot;,&quot;#CDC673&quot;, &quot;#CD6600&quot; ,&quot;#8B3E2F&quot;,&quot;#2F4F4F&quot; )
-names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;Tem&quot;, &quot;gd Tcell&quot;, &quot;NKT&quot;, &quot;CD8 Tscm&quot;)
-
-#Set ordered cluster list
-ordClusters &lt;- names(colPal_T)
-
-#Extract unique condition labels
-ordConds &lt;- unique(seuratT$cond)
-
-#Order clusters by condition
-ordVec_full &lt;- as.vector(t(outer(ordClusters, ordConds, paste, sep = &quot;_&quot;)))
-
-#Assign as the factor levels for Seurat identities
-Idents(seuratT) &lt;- factor(seuratT$cluster_cond, levels = ordVec_full)
-
-#Define marker genes
-selMarker &lt;- list(
-  Tcells_ = c(
-    &quot;Mki67&quot;,
-    &quot;Tcf7&quot;, &quot;Il2ra&quot;, &quot;Ctla4&quot;,
-    &quot;Gata3&quot;, &quot;Tbx21&quot;, &quot;Rorc&quot;,
-    &quot;Ifng&quot;, &quot;Il17a&quot;, &quot;Sell&quot;,
-    &quot;Cd44&quot;, &quot;Id2&quot;, &quot;Prf1&quot;,
-    &quot;Foxp3&quot;
-  )
-)
-
-#Prepare selGenes and gapR
-selGenes &lt;- data.frame(gene = unlist(selMarker)) %&gt;%
-  tibble::rownames_to_column(var = &quot;grp&quot;) %&gt;%
-  dplyr::mutate(Grp = gsub(&quot;_.*&quot;, &quot;&quot;, grp))
-
-grpCnt &lt;- selGenes %&gt;%
-  dplyr::group_by(Grp) %&gt;%
-  dplyr::summarise(cnt = dplyr::n())
-
-gapR &lt;- data.frame(Grp = unique(selGenes$Grp)) %&gt;%
-  dplyr::left_join(grpCnt, by = &quot;Grp&quot;) %&gt;%
-  dplyr::mutate(cumSum = cumsum(cnt))
-
-#Generate heatmap
-pOut &lt;- avgHeatmap(
-  seurat = seuratT,
-  selGenes = selGenes,
-  colVecIdent = colPal_T,
-  ordVec = ordVec_full,
-  gapVecR = gapR$cumSum,
-  gapVecC = NULL,
-  cc = FALSE,
-  cr = TRUE,
-  condCol = TRUE
-)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-18-1.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Abundance across non-sorted samples</p>
-<pre class="r"><code>#Plot abundance of clusters in individual samples
-##Leave out sorted samples
-
-seuratTSub &lt;- subset(seuratT, SampleName %in% c(&quot;8w_LMC8&quot;, &quot;8w_TCRM7&quot;, &quot;8w_TCRM8&quot;), invert=TRUE )
-  
-##run calculations
-datList &lt;- NULL
-for(con in unique(seuratTSub$SampleName)){
-  seuratT_sub &lt;- subset(seuratTSub, SampleName==con)
-  print(dim(seuratT_sub))
-  dat_SampleName &lt;- as.data.frame(table(seuratT_sub$TclusterLabel)) %&gt;%
-  mutate(percent=Freq/ncol(seuratT_sub)) %&gt;% mutate(SampleName=con)
-  datList[[con]] &lt;- dat_SampleName
-}</code></pre>
-<pre><code>[1] 32577  1329
-[1] 32577  1053
-[1] 32577   518
-[1] 32577   200
-[1] 32577  1510
-[1] 32577   436
-[1] 32577   871
-[1] 32577   357
-[1] 32577   513
-[1] 32577   753
-[1] 32577   408
-[1] 32577   543
-[1] 32577   760
-[1] 32577   503
-[1] 32577   238
-[1] 32577   304
-[1] 32577  1906
-[1] 32577   877
-[1] 32577   376
-[1] 32577   659
-[1] 32577   861
-[1] 32577  1078
-[1] 32577   633
-[1] 32577  1293</code></pre>
-<pre class="r"><code>dat_all &lt;- do.call(&quot;rbind&quot;, datList)
-
-
-ordX &lt;- c(&quot;4w_LMC1&quot;, &quot;4w_LMC2&quot;, &quot;4w_LMC3&quot;, &quot;4w_LMC4&quot;, &quot;8w_LMC1&quot;, &quot;8w_LMC2&quot;, &quot;8w_LMC3&quot;, &quot;8w_LMC4&quot;, &quot;8w_LMC5&quot;, &quot;8w_LMC6&quot;, &quot;8w_LMC7&quot;,  &quot;4w_TCRM1&quot;, &quot;4w_TCRM2&quot;, &quot;4w_TCRM3&quot;, &quot;4w_TCRM4&quot;, &quot;4w_TCRM5&quot;, &quot;4w_TCRM6&quot;, &quot;4w_TCRM7&quot;, &quot;8w_TCRM1&quot;, &quot;8w_TCRM2&quot;, &quot;8w_TCRM3&quot;, &quot;8w_TCRM4&quot;, &quot;8w_TCRM5&quot;, &quot;8w_TCRM6&quot;)
-
-#Create barplot with samples on x axis and cluster colors
-ggbarplot(dat_all, x= &quot;SampleName&quot;, y= &quot;percent&quot;, fill = &quot;Var1&quot;, legend = &quot;right&quot;, legend.titel = &quot;cluster&quot;, ylab = &quot;frequency&quot;) +  scale_fill_manual(values = colPal_T) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) </code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-19-1.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Abundance across phenotypes</p>
-<pre class="r"><code>datList &lt;- NULL
-for(con in unique(seuratT$Phenotype)){
-  seuratTSub &lt;- subset(seuratT, Phenotype==con)
-  print(dim(seuratTSub))
-  dat_Phenotype &lt;- as.data.frame(table(seuratTSub$TclusterLabel)) %&gt;%
-  mutate(percent=Freq/ncol(seuratTSub)) %&gt;% mutate(Phenotype=con)
-  datList[[con]] &lt;- dat_Phenotype
-}</code></pre>
-<pre><code>[1] 32577  7649
-[1] 32577  6632
-[1] 32577  3701</code></pre>
-<pre class="r"><code>dat_all &lt;- do.call(&quot;rbind&quot;, datList)
-
-#Set order of Phenotypes
-ordX &lt;- c(&quot;healthy&quot;, &quot;inflamed&quot;, &quot;iCMP&quot;)
-
-#Create barplot with Phenotypes on x axis and cluster colors
-ggbarplot(dat_all, x= &quot;Phenotype&quot;, y= &quot;percent&quot;, fill = &quot;Var1&quot;, legend = &quot;right&quot;, legend.titel = &quot;cluster&quot;, ylab = &quot;frequency&quot;) +  scale_fill_manual(values = colPal_T) + theme(axis.text.x = element_text(angle = 90)) + scale_x_discrete(limits=ordX) </code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-20-1.png" width="384" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Abundance across conditions</p>
-<pre class="r"><code>datList &lt;- NULL
-for(con in unique(seuratT$cond)){
-  seuratTSub &lt;- subset(seuratT, cond==con)
-  print(dim(seuratTSub))
-  dat_con &lt;- as.data.frame(table(seuratTSub$TclusterLabel)) %&gt;%
-  mutate(percent=Freq/ncol(seuratTSub)) %&gt;% mutate(cond=con)
-  datList[[con]] &lt;- dat_con
-}</code></pre>
-<pre><code>[1] 32577  7649
-[1] 32577 10333</code></pre>
-<pre class="r"><code>dat_all &lt;- do.call(&quot;rbind&quot;, datList)
-
-## plot abundance
-ggbarplot(dat_all, x= &quot;cond&quot;, y= &quot;percent&quot;, fill = &quot;Var1&quot;, legend = &quot;right&quot;, legend.titel = &quot;cluster&quot;, ylab = &quot;frequency&quot;)+ scale_fill_manual(values = colPal_T)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-21-1.png" width="384" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Violin plots - Il6 receptors</p>
+<div id="ab-t-cells-only" class="section level3">
+<h3>ab T cells only</h3>
 <pre class="r"><code>#genes &lt;- data.frame(gene=rownames(seuratT))
 
+seuratTSub &lt;- subset(seuratT, TclusterLabel %in% c(&quot;gdTcell-1&quot;, &quot;gdTcell-2&quot;, &quot;NKTcell&quot;), invert=TRUE)
 
-genes_sel &lt;- c(
-  &quot;ENSMUSG00000027947.Il6ra&quot;,
-  &quot;ENSMUSG00000021756.Il6st&quot;
-)
+selMarker &lt;- list(stroma = c(&quot;Il17a&quot;, &quot;Il17f&quot;, &quot;Rorc&quot;, &quot;Stat3&quot;, &quot;Ifng&quot;, &quot;Tbx21&quot;, &quot;Stat4&quot;, &quot;Stat1&quot;, &quot;Foxp3&quot;))
+    
+Idents(seuratTSub) &lt;- seuratTSub$TclusterLabel
 
-# gene expression in cluster
-Idents(seuratT) &lt;- seuratT$TclusterLabel
+selGenes &lt;- data.frame(gene=unlist(selMarker)) %&gt;%
+  rownames_to_column(var=&quot;grp&quot;) %&gt;% mutate(Grp=gsub(&quot;_.*&quot;, &quot;&quot;, grp))
+grpCnt &lt;- selGenes %&gt;% group_by(Grp) %&gt;% summarise(cnt=n())
+gapR &lt;- data.frame(Grp=unique(selGenes$Grp)) %&gt;% 
+  left_join(.,grpCnt, by=&quot;Grp&quot;) %&gt;% mutate(cumSum=cumsum(cnt)) 
 
-ordX &lt;- names(colPal_T)
+colPal_T &lt;- c(&quot;#CDCDC1&quot;,  &quot;#8C8C82&quot;, &quot;#A3B18A&quot;,  &quot;#2F4F4F&quot; ,  &quot;#8B3E2F&quot;  , &quot;#CDC673&quot;,  &quot;#2C3E70&quot;)
+names(colPal_T) &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;,  &quot;CD8 Tscm&quot;,  &quot;CD8 Teff&quot;, &quot;Tregs&quot;, &quot;CD4 Tcm&quot;)
 
-plots &lt;- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratT,
-    features = gene,
-    cols = colPal_T, alpha = 0.05
-  ) + scale_x_discrete(limits=ordX)
-})
+ordVec &lt;- c(&quot;CD4 Tscm&quot;, &quot;CD4 Tcm&quot;, &quot;CD4 Tem&quot;, &quot;CD4 Teff&quot;, &quot;Tregs&quot;, &quot;CD8 Tscm&quot;, &quot;CD8 Teff&quot;)
 
-for (p in plots) print(p)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-22-1.png" width="672" style="display: block; margin: auto;" />
+
+pOut &lt;- avgHeatmap(seurat = seuratTSub, selGenes = selGenes,
+                  colVecIdent = colPal_T, 
+                  ordVec=ordVec,
+                  gapVecR=NULL, gapVecC=NULL,cc=F,
+                  cr=T, condCol=F)</code></pre>
+<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-44-1.png" width="480" style="display: block; margin: auto;" />
 <div class="alert alert-warning">
 <strong>Warning!</strong> The custom <code>fig.path</code> you set was
 ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-22-2.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<pre class="r"><code>plots &lt;- lapply(genes_sel, function(gene) {
-  VlnPlot(
-    object = seuratT,
-    features = gene,
-    cols = c(&quot;#D3D3D3&quot;, &quot;#B45B5C&quot;), split.by = &quot;cond&quot;, split.plot = T, alpha = 0.1
-  ) + scale_x_discrete(limits=ordX)
-})
-
-for (p in plots) print(p)</code></pre>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-22-3.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
 </div>
-<img src="figure/11_characterize%20T%20cells.Rmd/unnamed-chunk-22-4.png" width="672" style="display: block; margin: auto;" />
-<div class="alert alert-warning">
-<strong>Warning!</strong> The custom <code>fig.path</code> you set was
-ignored by workflowr.
-</div>
-<p>#Save seurat object</p>
-<pre class="r"><code>#Save seurat object
+<div id="save-seurat-object" class="section level1">
+<h1>Save seurat object</h1>
+<pre class="r"><code># Save seurat object
 basedir &lt;- here()
 saveRDS(seuratT, file = paste0(basedir, &quot;/data/pericarditis_allmerged_Tcells_cleaned_seurat_cL.rds&quot;))</code></pre>
-<p>#session info</p>
+</div>
+<div id="session-info" class="section level1">
+<h1>Session info</h1>
 <pre class="r"><code>sessionInfo()</code></pre>
 <pre><code>R version 4.4.0 (2024-04-24)
 Platform: x86_64-apple-darwin20
@@ -1350,162 +1378,117 @@ attached base packages:
 [8] methods   base     
 
 other attached packages:
- [1] RColorBrewer_1.1-3          ggsci_3.2.0                
- [3] here_1.0.1                  cowplot_1.2.0              
- [5] reshape2_1.4.4              VennDiagram_1.7.3          
- [7] futile.logger_1.4.3         ggupset_0.4.1              
- [9] gridExtra_2.3               DOSE_3.30.5                
-[11] enrichplot_1.24.4           msigdbr_25.1.1             
-[13] org.Mm.eg.db_3.19.1         AnnotationDbi_1.66.0       
-[15] clusterProfiler_4.12.6      multtest_2.60.0            
-[17] metap_1.12                  scater_1.32.1              
-[19] scuttle_1.14.0              destiny_3.18.0             
-[21] circlize_0.4.16             muscat_1.18.0              
-[23] viridis_0.6.5               viridisLite_0.4.2          
-[25] lubridate_1.9.4             forcats_1.0.0              
-[27] stringr_1.5.1               purrr_1.1.0                
-[29] readr_2.1.5                 tidyr_1.3.1                
-[31] tibble_3.3.0                tidyverse_2.0.0            
-[33] dplyr_1.1.4                 SingleCellExperiment_1.26.0
-[35] SummarizedExperiment_1.34.0 Biobase_2.64.0             
-[37] GenomicRanges_1.56.2        GenomeInfoDb_1.40.1        
-[39] IRanges_2.38.1              S4Vectors_0.42.1           
-[41] BiocGenerics_0.50.0         MatrixGenerics_1.16.0      
-[43] matrixStats_1.5.0           pheatmap_1.0.13            
-[45] ggpubr_0.6.1                ggplot2_3.5.2              
-[47] Seurat_5.3.0                SeuratObject_5.1.0         
-[49] sp_2.2-0                    runSeurat3_0.1.0           
-[51] ExploreSCdataSeurat3_0.1.0 
+ [1] scater_1.32.1               scuttle_1.14.0             
+ [3] SingleCellExperiment_1.26.0 SummarizedExperiment_1.34.0
+ [5] GenomicRanges_1.56.2        GenomeInfoDb_1.40.1        
+ [7] MatrixGenerics_1.16.0       matrixStats_1.5.0          
+ [9] here_1.0.1                  DOSE_3.30.5                
+[11] enrichplot_1.24.4           org.Mm.eg.db_3.19.1        
+[13] AnnotationDbi_1.66.0        IRanges_2.38.1             
+[15] S4Vectors_0.42.1            Biobase_2.64.0             
+[17] BiocGenerics_0.50.0         clusterProfiler_4.12.6     
+[19] lubridate_1.9.4             forcats_1.0.0              
+[21] stringr_1.5.1               purrr_1.1.0                
+[23] readr_2.1.5                 tidyr_1.3.1                
+[25] tibble_3.3.0                tidyverse_2.0.0            
+[27] dplyr_1.1.4                 pheatmap_1.0.13            
+[29] ggpubr_0.6.1                ggplot2_3.5.2              
+[31] Seurat_5.3.0                SeuratObject_5.1.0         
+[33] sp_2.2-0                   
 
 loaded via a namespace (and not attached):
-  [1] igraph_2.1.4              ica_1.0-3                
-  [3] plotly_4.11.0             Formula_1.2-5            
-  [5] zlibbioc_1.50.0           tidyselect_1.2.1         
-  [7] bit_4.6.0                 doParallel_1.0.17        
-  [9] clue_0.3-66               lattice_0.22-7           
- [11] rjson_0.2.23              blob_1.2.4               
- [13] S4Arrays_1.4.1            pbkrtest_0.5.5           
- [15] parallel_4.4.0            png_0.1-8                
- [17] plotrix_3.8-4             cli_3.6.5                
- [19] ggplotify_0.1.2           goftest_1.2-3            
- [21] VIM_6.2.2                 variancePartition_1.34.0 
- [23] BiocNeighbors_1.22.0      shadowtext_0.1.5         
- [25] uwot_0.2.3                curl_6.4.0               
- [27] tidytree_0.4.6            mime_0.13                
- [29] evaluate_1.0.4            ComplexHeatmap_2.20.0    
- [31] stringi_1.8.7             backports_1.5.0          
- [33] lmerTest_3.1-3            qqconf_1.3.2             
- [35] httpuv_1.6.16             magrittr_2.0.3           
- [37] rappdirs_0.3.3            splines_4.4.0            
- [39] ggraph_2.2.1              sctransform_0.4.2        
- [41] ggbeeswarm_0.7.2          DBI_1.2.3                
- [43] jquerylib_0.1.4           smoother_1.3             
- [45] withr_3.0.2               git2r_0.36.2             
- [47] corpcor_1.6.10            reformulas_0.4.1         
- [49] class_7.3-23              rprojroot_2.1.0          
- [51] lmtest_0.9-40             tidygraph_1.3.1          
- [53] formatR_1.14              colourpicker_1.3.0       
- [55] htmlwidgets_1.6.4         fs_1.6.6                 
- [57] ggrepel_0.9.6             labeling_0.4.3           
- [59] fANCOVA_0.6-1             SparseArray_1.4.8        
- [61] DESeq2_1.44.0             ranger_0.17.0            
- [63] DEoptimR_1.1-3-1          reticulate_1.43.0        
- [65] hexbin_1.28.5             zoo_1.8-14               
- [67] XVector_0.44.0            knitr_1.50               
- [69] ggplot.multistats_1.0.1   UCSC.utils_1.0.0         
- [71] RhpcBLASctl_0.23-42       timechange_0.3.0         
- [73] foreach_1.5.2             patchwork_1.3.1          
- [75] caTools_1.18.3            data.table_1.17.8        
- [77] ggtree_3.12.0             R.oo_1.27.1              
- [79] RSpectra_0.16-2           irlba_2.3.5.1            
- [81] ggrastr_1.0.2             fastDummies_1.7.5        
- [83] gridGraphics_0.5-1        lazyeval_0.2.2           
- [85] yaml_2.3.10               survival_3.8-3           
- [87] scattermore_1.2           crayon_1.5.3             
- [89] RcppAnnoy_0.0.22          progressr_0.15.1         
- [91] tweenr_2.0.3              later_1.4.2              
- [93] ggridges_0.5.6            codetools_0.2-20         
- [95] GlobalOptions_0.1.2       aod_1.3.3                
- [97] KEGGREST_1.44.1           Rtsne_0.17               
- [99] shape_1.4.6.1             limma_3.60.6             
-[101] pkgconfig_2.0.3           TMB_1.9.17               
-[103] spatstat.univar_3.1-4     mathjaxr_1.8-0           
-[105] EnvStats_3.1.0            aplot_0.2.8              
-[107] scatterplot3d_0.3-44      ape_5.8-1                
-[109] spatstat.sparse_3.1-0     xtable_1.8-4             
-[111] car_3.1-3                 plyr_1.8.9               
-[113] httr_1.4.7                rbibutils_2.3            
-[115] tools_4.4.0               globals_0.18.0           
-[117] beeswarm_0.4.0            broom_1.0.8              
-[119] nlme_3.1-168              lambda.r_1.2.4           
-[121] assertthat_0.2.1          lme4_1.1-37              
-[123] digest_0.6.37             numDeriv_2016.8-1.1      
-[125] Matrix_1.7-3              farver_2.1.2             
-[127] tzdb_0.5.0                remaCor_0.0.18           
-[129] yulab.utils_0.2.0         glue_1.8.0               
-[131] cachem_1.1.0              polyclip_1.10-7          
-[133] generics_0.1.4            Biostrings_2.72.1        
-[135] mvtnorm_1.3-3             presto_1.0.0             
-[137] parallelly_1.45.1         mnormt_2.1.1             
-[139] statmod_1.5.0             RcppHNSW_0.6.0           
-[141] ScaledMatrix_1.12.0       carData_3.0-5            
-[143] minqa_1.2.8               pbapply_1.7-4            
-[145] httr2_1.2.1               spam_2.11-1              
-[147] gson_0.1.0                graphlayouts_1.2.2       
-[149] gtools_3.9.5              ggsignif_0.6.4           
-[151] RcppEigen_0.3.4.0.2       shiny_1.11.1             
-[153] GenomeInfoDbData_1.2.12   glmmTMB_1.1.11           
-[155] R.utils_2.13.0            memoise_2.0.1            
-[157] rmarkdown_2.29            scales_1.4.0             
-[159] R.methodsS3_1.8.2         future_1.58.0            
-[161] RANN_2.6.2                Cairo_1.6-5              
-[163] spatstat.data_3.1-6       rstudioapi_0.17.1        
-[165] cluster_2.1.8.1           mutoss_0.1-13            
-[167] spatstat.utils_3.1-5      hms_1.1.3                
-[169] fitdistrplus_1.2-4        colorspace_2.1-1         
-[171] rlang_1.1.6               DelayedMatrixStats_1.26.0
-[173] sparseMatrixStats_1.16.0  xts_0.14.1               
-[175] dotCall64_1.2             shinydashboard_0.7.3     
-[177] ggforce_0.5.0             laeken_0.5.3             
-[179] mgcv_1.9-3                xfun_0.52                
-[181] e1071_1.7-16              TH.data_1.1-3            
-[183] iterators_1.0.14          abind_1.4-8              
-[185] GOSemSim_2.30.2           treeio_1.28.0            
-[187] futile.options_1.0.1      bitops_1.0-9             
-[189] Rdpack_2.6.4              promises_1.3.3           
-[191] scatterpie_0.2.5          RSQLite_2.4.2            
-[193] qvalue_2.36.0             sandwich_3.1-1           
-[195] fgsea_1.30.0              DelayedArray_0.30.1      
-[197] proxy_0.4-27              GO.db_3.19.1             
-[199] compiler_4.4.0            prettyunits_1.2.0        
-[201] boot_1.3-31               beachmat_2.20.0          
-[203] listenv_0.9.1             Rcpp_1.1.0               
-[205] edgeR_4.2.2               workflowr_1.7.1          
-[207] BiocSingular_1.20.0       tensor_1.5.1             
-[209] MASS_7.3-65               progress_1.2.3           
-[211] BiocParallel_1.38.0       babelgene_22.9           
-[213] spatstat.random_3.4-1     R6_2.6.1                 
-[215] fastmap_1.2.0             multcomp_1.4-28          
-[217] fastmatch_1.1-6           rstatix_0.7.2            
-[219] vipor_0.4.7               TTR_0.24.4               
-[221] ROCR_1.0-11               TFisher_0.2.0            
-[223] rsvd_1.0.5                vcd_1.4-13               
-[225] nnet_7.3-20               gtable_0.3.6             
-[227] KernSmooth_2.23-26        miniUI_0.1.2             
-[229] deldir_2.0-4              htmltools_0.5.8.1        
-[231] ggthemes_5.1.0            bit64_4.6.0-1            
-[233] spatstat.explore_3.5-2    lifecycle_1.0.4          
-[235] blme_1.0-6                S7_0.2.0                 
-[237] nloptr_2.2.1              sass_0.4.10              
-[239] vctrs_0.6.5               robustbase_0.99-4-1      
-[241] spatstat.geom_3.5-0       sn_2.1.1                 
-[243] ggfun_0.2.0               future.apply_1.20.0      
-[245] bslib_0.9.0               pillar_1.11.0            
-[247] gplots_3.2.0              pcaMethods_1.96.0        
-[249] locfit_1.5-9.12           jsonlite_2.0.0           
-[251] GetoptLong_1.0.5         </code></pre>
+  [1] fs_1.6.6                  spatstat.sparse_3.1-0    
+  [3] httr_1.4.7                RColorBrewer_1.1-3       
+  [5] tools_4.4.0               sctransform_0.4.2        
+  [7] backports_1.5.0           R6_2.6.1                 
+  [9] lazyeval_0.2.2            uwot_0.2.3               
+ [11] withr_3.0.2               gridExtra_2.3            
+ [13] progressr_0.15.1          cli_3.6.5                
+ [15] spatstat.explore_3.5-2    fastDummies_1.7.5        
+ [17] scatterpie_0.2.5          labeling_0.4.3           
+ [19] sass_0.4.10               S7_0.2.0                 
+ [21] spatstat.data_3.1-6       ggridges_0.5.6           
+ [23] pbapply_1.7-4             yulab.utils_0.2.0        
+ [25] gson_0.1.0                R.utils_2.13.0           
+ [27] parallelly_1.45.1         limma_3.60.6             
+ [29] rstudioapi_0.17.1         RSQLite_2.4.2            
+ [31] generics_0.1.4            gridGraphics_0.5-1       
+ [33] ica_1.0-3                 spatstat.random_3.4-1    
+ [35] car_3.1-3                 GO.db_3.19.1             
+ [37] Matrix_1.7-3              ggbeeswarm_0.7.2         
+ [39] abind_1.4-8               R.methodsS3_1.8.2        
+ [41] lifecycle_1.0.4           yaml_2.3.10              
+ [43] carData_3.0-5             SparseArray_1.4.8        
+ [45] qvalue_2.36.0             Rtsne_0.17               
+ [47] blob_1.2.4                promises_1.3.3           
+ [49] crayon_1.5.3              miniUI_0.1.2             
+ [51] lattice_0.22-7            beachmat_2.20.0          
+ [53] cowplot_1.2.0             KEGGREST_1.44.1          
+ [55] pillar_1.11.0             knitr_1.50               
+ [57] fgsea_1.30.0              future.apply_1.20.0      
+ [59] codetools_0.2-20          fastmatch_1.1-6          
+ [61] glue_1.8.0                ggfun_0.2.0              
+ [63] spatstat.univar_3.1-4     data.table_1.17.8        
+ [65] vctrs_0.6.5               png_0.1-8                
+ [67] treeio_1.28.0             spam_2.11-1              
+ [69] gtable_0.3.6              cachem_1.1.0             
+ [71] xfun_0.52                 S4Arrays_1.4.1           
+ [73] mime_0.13                 tidygraph_1.3.1          
+ [75] survival_3.8-3            statmod_1.5.0            
+ [77] fitdistrplus_1.2-4        ROCR_1.0-11              
+ [79] nlme_3.1-168              ggtree_3.12.0            
+ [81] bit64_4.6.0-1             RcppAnnoy_0.0.22         
+ [83] rprojroot_2.1.0           bslib_0.9.0              
+ [85] irlba_2.3.5.1             vipor_0.4.7              
+ [87] KernSmooth_2.23-26        colorspace_2.1-1         
+ [89] DBI_1.2.3                 ggrastr_1.0.2            
+ [91] tidyselect_1.2.1          bit_4.6.0                
+ [93] compiler_4.4.0            git2r_0.36.2             
+ [95] httr2_1.2.1               BiocNeighbors_1.22.0     
+ [97] DelayedArray_0.30.1       plotly_4.11.0            
+ [99] shadowtext_0.1.5          scales_1.4.0             
+[101] lmtest_0.9-40             rappdirs_0.3.3           
+[103] digest_0.6.37             goftest_1.2-3            
+[105] presto_1.0.0              spatstat.utils_3.1-5     
+[107] rmarkdown_2.29            XVector_0.44.0           
+[109] htmltools_0.5.8.1         pkgconfig_2.0.3          
+[111] sparseMatrixStats_1.16.0  fastmap_1.2.0            
+[113] rlang_1.1.6               htmlwidgets_1.6.4        
+[115] UCSC.utils_1.0.0          DelayedMatrixStats_1.26.0
+[117] shiny_1.11.1              farver_2.1.2             
+[119] jquerylib_0.1.4           zoo_1.8-14               
+[121] jsonlite_2.0.0            BiocParallel_1.38.0      
+[123] GOSemSim_2.30.2           R.oo_1.27.1              
+[125] BiocSingular_1.20.0       magrittr_2.0.3           
+[127] Formula_1.2-5             GenomeInfoDbData_1.2.12  
+[129] ggplotify_0.1.2           dotCall64_1.2            
+[131] patchwork_1.3.1           Rcpp_1.1.0               
+[133] ape_5.8-1                 viridis_0.6.5            
+[135] reticulate_1.43.0         stringi_1.8.7            
+[137] ggraph_2.2.1              zlibbioc_1.50.0          
+[139] MASS_7.3-65               plyr_1.8.9               
+[141] parallel_4.4.0            listenv_0.9.1            
+[143] ggrepel_0.9.6             deldir_2.0-4             
+[145] Biostrings_2.72.1         graphlayouts_1.2.2       
+[147] splines_4.4.0             tensor_1.5.1             
+[149] hms_1.1.3                 igraph_2.1.4             
+[151] spatstat.geom_3.5-0       ggsignif_0.6.4           
+[153] RcppHNSW_0.6.0            ScaledMatrix_1.12.0      
+[155] reshape2_1.4.4            evaluate_1.0.4           
+[157] tzdb_0.5.0                tweenr_2.0.3             
+[159] httpuv_1.6.16             RANN_2.6.2               
+[161] polyclip_1.10-7           future_1.58.0            
+[163] scattermore_1.2           ggforce_0.5.0            
+[165] rsvd_1.0.5                broom_1.0.8              
+[167] xtable_1.8-4              RSpectra_0.16-2          
+[169] tidytree_0.4.6            rstatix_0.7.2            
+[171] later_1.4.2               viridisLite_0.4.2        
+[173] aplot_0.2.8               beeswarm_0.4.0           
+[175] memoise_2.0.1             cluster_2.1.8.1          
+[177] workflowr_1.7.1           timechange_0.3.0         
+[179] globals_0.18.0           </code></pre>
 <pre class="r"><code>date()</code></pre>
-<pre><code>[1] &quot;Fri Dec  5 18:30:11 2025&quot;</code></pre>
+<pre><code>[1] &quot;Wed Apr 29 13:30:57 2026&quot;</code></pre>
 <br>
 <p>
 <button type="button" class="btn btn-default btn-workflowr btn-workflowr-sessioninfo" data-toggle="collapse" data-target="#workflowr-sessioninfo" style="display: block;">
@@ -1534,160 +1517,115 @@ attached base packages:
 [8] methods   base     
 
 other attached packages:
- [1] RColorBrewer_1.1-3          ggsci_3.2.0                
- [3] here_1.0.1                  cowplot_1.2.0              
- [5] reshape2_1.4.4              VennDiagram_1.7.3          
- [7] futile.logger_1.4.3         ggupset_0.4.1              
- [9] gridExtra_2.3               DOSE_3.30.5                
-[11] enrichplot_1.24.4           msigdbr_25.1.1             
-[13] org.Mm.eg.db_3.19.1         AnnotationDbi_1.66.0       
-[15] clusterProfiler_4.12.6      multtest_2.60.0            
-[17] metap_1.12                  scater_1.32.1              
-[19] scuttle_1.14.0              destiny_3.18.0             
-[21] circlize_0.4.16             muscat_1.18.0              
-[23] viridis_0.6.5               viridisLite_0.4.2          
-[25] lubridate_1.9.4             forcats_1.0.0              
-[27] stringr_1.5.1               purrr_1.1.0                
-[29] readr_2.1.5                 tidyr_1.3.1                
-[31] tibble_3.3.0                tidyverse_2.0.0            
-[33] dplyr_1.1.4                 SingleCellExperiment_1.26.0
-[35] SummarizedExperiment_1.34.0 Biobase_2.64.0             
-[37] GenomicRanges_1.56.2        GenomeInfoDb_1.40.1        
-[39] IRanges_2.38.1              S4Vectors_0.42.1           
-[41] BiocGenerics_0.50.0         MatrixGenerics_1.16.0      
-[43] matrixStats_1.5.0           pheatmap_1.0.13            
-[45] ggpubr_0.6.1                ggplot2_3.5.2              
-[47] Seurat_5.3.0                SeuratObject_5.1.0         
-[49] sp_2.2-0                    runSeurat3_0.1.0           
-[51] ExploreSCdataSeurat3_0.1.0 
+ [1] scater_1.32.1               scuttle_1.14.0             
+ [3] SingleCellExperiment_1.26.0 SummarizedExperiment_1.34.0
+ [5] GenomicRanges_1.56.2        GenomeInfoDb_1.40.1        
+ [7] MatrixGenerics_1.16.0       matrixStats_1.5.0          
+ [9] here_1.0.1                  DOSE_3.30.5                
+[11] enrichplot_1.24.4           org.Mm.eg.db_3.19.1        
+[13] AnnotationDbi_1.66.0        IRanges_2.38.1             
+[15] S4Vectors_0.42.1            Biobase_2.64.0             
+[17] BiocGenerics_0.50.0         clusterProfiler_4.12.6     
+[19] lubridate_1.9.4             forcats_1.0.0              
+[21] stringr_1.5.1               purrr_1.1.0                
+[23] readr_2.1.5                 tidyr_1.3.1                
+[25] tibble_3.3.0                tidyverse_2.0.0            
+[27] dplyr_1.1.4                 pheatmap_1.0.13            
+[29] ggpubr_0.6.1                ggplot2_3.5.2              
+[31] Seurat_5.3.0                SeuratObject_5.1.0         
+[33] sp_2.2-0                   
 
 loaded via a namespace (and not attached):
-  [1] igraph_2.1.4              ica_1.0-3                
-  [3] plotly_4.11.0             Formula_1.2-5            
-  [5] zlibbioc_1.50.0           tidyselect_1.2.1         
-  [7] bit_4.6.0                 doParallel_1.0.17        
-  [9] clue_0.3-66               lattice_0.22-7           
- [11] rjson_0.2.23              blob_1.2.4               
- [13] S4Arrays_1.4.1            pbkrtest_0.5.5           
- [15] parallel_4.4.0            png_0.1-8                
- [17] plotrix_3.8-4             cli_3.6.5                
- [19] ggplotify_0.1.2           goftest_1.2-3            
- [21] VIM_6.2.2                 variancePartition_1.34.0 
- [23] BiocNeighbors_1.22.0      shadowtext_0.1.5         
- [25] uwot_0.2.3                curl_6.4.0               
- [27] tidytree_0.4.6            mime_0.13                
- [29] evaluate_1.0.4            ComplexHeatmap_2.20.0    
- [31] stringi_1.8.7             backports_1.5.0          
- [33] lmerTest_3.1-3            qqconf_1.3.2             
- [35] httpuv_1.6.16             magrittr_2.0.3           
- [37] rappdirs_0.3.3            splines_4.4.0            
- [39] ggraph_2.2.1              sctransform_0.4.2        
- [41] ggbeeswarm_0.7.2          DBI_1.2.3                
- [43] jquerylib_0.1.4           smoother_1.3             
- [45] withr_3.0.2               git2r_0.36.2             
- [47] corpcor_1.6.10            reformulas_0.4.1         
- [49] class_7.3-23              rprojroot_2.1.0          
- [51] lmtest_0.9-40             tidygraph_1.3.1          
- [53] formatR_1.14              colourpicker_1.3.0       
- [55] htmlwidgets_1.6.4         fs_1.6.6                 
- [57] ggrepel_0.9.6             labeling_0.4.3           
- [59] fANCOVA_0.6-1             SparseArray_1.4.8        
- [61] DESeq2_1.44.0             ranger_0.17.0            
- [63] DEoptimR_1.1-3-1          reticulate_1.43.0        
- [65] hexbin_1.28.5             zoo_1.8-14               
- [67] XVector_0.44.0            knitr_1.50               
- [69] ggplot.multistats_1.0.1   UCSC.utils_1.0.0         
- [71] RhpcBLASctl_0.23-42       timechange_0.3.0         
- [73] foreach_1.5.2             patchwork_1.3.1          
- [75] caTools_1.18.3            data.table_1.17.8        
- [77] ggtree_3.12.0             R.oo_1.27.1              
- [79] RSpectra_0.16-2           irlba_2.3.5.1            
- [81] ggrastr_1.0.2             fastDummies_1.7.5        
- [83] gridGraphics_0.5-1        lazyeval_0.2.2           
- [85] yaml_2.3.10               survival_3.8-3           
- [87] scattermore_1.2           crayon_1.5.3             
- [89] RcppAnnoy_0.0.22          progressr_0.15.1         
- [91] tweenr_2.0.3              later_1.4.2              
- [93] ggridges_0.5.6            codetools_0.2-20         
- [95] GlobalOptions_0.1.2       aod_1.3.3                
- [97] KEGGREST_1.44.1           Rtsne_0.17               
- [99] shape_1.4.6.1             limma_3.60.6             
-[101] pkgconfig_2.0.3           TMB_1.9.17               
-[103] spatstat.univar_3.1-4     mathjaxr_1.8-0           
-[105] EnvStats_3.1.0            aplot_0.2.8              
-[107] scatterplot3d_0.3-44      ape_5.8-1                
-[109] spatstat.sparse_3.1-0     xtable_1.8-4             
-[111] car_3.1-3                 plyr_1.8.9               
-[113] httr_1.4.7                rbibutils_2.3            
-[115] tools_4.4.0               globals_0.18.0           
-[117] beeswarm_0.4.0            broom_1.0.8              
-[119] nlme_3.1-168              lambda.r_1.2.4           
-[121] assertthat_0.2.1          lme4_1.1-37              
-[123] digest_0.6.37             numDeriv_2016.8-1.1      
-[125] Matrix_1.7-3              farver_2.1.2             
-[127] tzdb_0.5.0                remaCor_0.0.18           
-[129] yulab.utils_0.2.0         glue_1.8.0               
-[131] cachem_1.1.0              polyclip_1.10-7          
-[133] generics_0.1.4            Biostrings_2.72.1        
-[135] mvtnorm_1.3-3             presto_1.0.0             
-[137] parallelly_1.45.1         mnormt_2.1.1             
-[139] statmod_1.5.0             RcppHNSW_0.6.0           
-[141] ScaledMatrix_1.12.0       carData_3.0-5            
-[143] minqa_1.2.8               pbapply_1.7-4            
-[145] httr2_1.2.1               spam_2.11-1              
-[147] gson_0.1.0                graphlayouts_1.2.2       
-[149] gtools_3.9.5              ggsignif_0.6.4           
-[151] RcppEigen_0.3.4.0.2       shiny_1.11.1             
-[153] GenomeInfoDbData_1.2.12   glmmTMB_1.1.11           
-[155] R.utils_2.13.0            memoise_2.0.1            
-[157] rmarkdown_2.29            scales_1.4.0             
-[159] R.methodsS3_1.8.2         future_1.58.0            
-[161] RANN_2.6.2                Cairo_1.6-5              
-[163] spatstat.data_3.1-6       rstudioapi_0.17.1        
-[165] cluster_2.1.8.1           mutoss_0.1-13            
-[167] spatstat.utils_3.1-5      hms_1.1.3                
-[169] fitdistrplus_1.2-4        colorspace_2.1-1         
-[171] rlang_1.1.6               DelayedMatrixStats_1.26.0
-[173] sparseMatrixStats_1.16.0  xts_0.14.1               
-[175] dotCall64_1.2             shinydashboard_0.7.3     
-[177] ggforce_0.5.0             laeken_0.5.3             
-[179] mgcv_1.9-3                xfun_0.52                
-[181] e1071_1.7-16              TH.data_1.1-3            
-[183] iterators_1.0.14          abind_1.4-8              
-[185] GOSemSim_2.30.2           treeio_1.28.0            
-[187] futile.options_1.0.1      bitops_1.0-9             
-[189] Rdpack_2.6.4              promises_1.3.3           
-[191] scatterpie_0.2.5          RSQLite_2.4.2            
-[193] qvalue_2.36.0             sandwich_3.1-1           
-[195] fgsea_1.30.0              DelayedArray_0.30.1      
-[197] proxy_0.4-27              GO.db_3.19.1             
-[199] compiler_4.4.0            prettyunits_1.2.0        
-[201] boot_1.3-31               beachmat_2.20.0          
-[203] listenv_0.9.1             Rcpp_1.1.0               
-[205] edgeR_4.2.2               workflowr_1.7.1          
-[207] BiocSingular_1.20.0       tensor_1.5.1             
-[209] MASS_7.3-65               progress_1.2.3           
-[211] BiocParallel_1.38.0       babelgene_22.9           
-[213] spatstat.random_3.4-1     R6_2.6.1                 
-[215] fastmap_1.2.0             multcomp_1.4-28          
-[217] fastmatch_1.1-6           rstatix_0.7.2            
-[219] vipor_0.4.7               TTR_0.24.4               
-[221] ROCR_1.0-11               TFisher_0.2.0            
-[223] rsvd_1.0.5                vcd_1.4-13               
-[225] nnet_7.3-20               gtable_0.3.6             
-[227] KernSmooth_2.23-26        miniUI_0.1.2             
-[229] deldir_2.0-4              htmltools_0.5.8.1        
-[231] ggthemes_5.1.0            bit64_4.6.0-1            
-[233] spatstat.explore_3.5-2    lifecycle_1.0.4          
-[235] blme_1.0-6                S7_0.2.0                 
-[237] nloptr_2.2.1              sass_0.4.10              
-[239] vctrs_0.6.5               robustbase_0.99-4-1      
-[241] spatstat.geom_3.5-0       sn_2.1.1                 
-[243] ggfun_0.2.0               future.apply_1.20.0      
-[245] bslib_0.9.0               pillar_1.11.0            
-[247] gplots_3.2.0              pcaMethods_1.96.0        
-[249] locfit_1.5-9.12           jsonlite_2.0.0           
-[251] GetoptLong_1.0.5         </code></pre>
+  [1] fs_1.6.6                  spatstat.sparse_3.1-0    
+  [3] httr_1.4.7                RColorBrewer_1.1-3       
+  [5] tools_4.4.0               sctransform_0.4.2        
+  [7] backports_1.5.0           R6_2.6.1                 
+  [9] lazyeval_0.2.2            uwot_0.2.3               
+ [11] withr_3.0.2               gridExtra_2.3            
+ [13] progressr_0.15.1          cli_3.6.5                
+ [15] spatstat.explore_3.5-2    fastDummies_1.7.5        
+ [17] scatterpie_0.2.5          labeling_0.4.3           
+ [19] sass_0.4.10               S7_0.2.0                 
+ [21] spatstat.data_3.1-6       ggridges_0.5.6           
+ [23] pbapply_1.7-4             yulab.utils_0.2.0        
+ [25] gson_0.1.0                R.utils_2.13.0           
+ [27] parallelly_1.45.1         limma_3.60.6             
+ [29] rstudioapi_0.17.1         RSQLite_2.4.2            
+ [31] generics_0.1.4            gridGraphics_0.5-1       
+ [33] ica_1.0-3                 spatstat.random_3.4-1    
+ [35] car_3.1-3                 GO.db_3.19.1             
+ [37] Matrix_1.7-3              ggbeeswarm_0.7.2         
+ [39] abind_1.4-8               R.methodsS3_1.8.2        
+ [41] lifecycle_1.0.4           yaml_2.3.10              
+ [43] carData_3.0-5             SparseArray_1.4.8        
+ [45] qvalue_2.36.0             Rtsne_0.17               
+ [47] blob_1.2.4                promises_1.3.3           
+ [49] crayon_1.5.3              miniUI_0.1.2             
+ [51] lattice_0.22-7            beachmat_2.20.0          
+ [53] cowplot_1.2.0             KEGGREST_1.44.1          
+ [55] pillar_1.11.0             knitr_1.50               
+ [57] fgsea_1.30.0              future.apply_1.20.0      
+ [59] codetools_0.2-20          fastmatch_1.1-6          
+ [61] glue_1.8.0                ggfun_0.2.0              
+ [63] spatstat.univar_3.1-4     data.table_1.17.8        
+ [65] vctrs_0.6.5               png_0.1-8                
+ [67] treeio_1.28.0             spam_2.11-1              
+ [69] gtable_0.3.6              cachem_1.1.0             
+ [71] xfun_0.52                 S4Arrays_1.4.1           
+ [73] mime_0.13                 tidygraph_1.3.1          
+ [75] survival_3.8-3            statmod_1.5.0            
+ [77] fitdistrplus_1.2-4        ROCR_1.0-11              
+ [79] nlme_3.1-168              ggtree_3.12.0            
+ [81] bit64_4.6.0-1             RcppAnnoy_0.0.22         
+ [83] rprojroot_2.1.0           bslib_0.9.0              
+ [85] irlba_2.3.5.1             vipor_0.4.7              
+ [87] KernSmooth_2.23-26        colorspace_2.1-1         
+ [89] DBI_1.2.3                 ggrastr_1.0.2            
+ [91] tidyselect_1.2.1          bit_4.6.0                
+ [93] compiler_4.4.0            git2r_0.36.2             
+ [95] httr2_1.2.1               BiocNeighbors_1.22.0     
+ [97] DelayedArray_0.30.1       plotly_4.11.0            
+ [99] shadowtext_0.1.5          scales_1.4.0             
+[101] lmtest_0.9-40             rappdirs_0.3.3           
+[103] digest_0.6.37             goftest_1.2-3            
+[105] presto_1.0.0              spatstat.utils_3.1-5     
+[107] rmarkdown_2.29            XVector_0.44.0           
+[109] htmltools_0.5.8.1         pkgconfig_2.0.3          
+[111] sparseMatrixStats_1.16.0  fastmap_1.2.0            
+[113] rlang_1.1.6               htmlwidgets_1.6.4        
+[115] UCSC.utils_1.0.0          DelayedMatrixStats_1.26.0
+[117] shiny_1.11.1              farver_2.1.2             
+[119] jquerylib_0.1.4           zoo_1.8-14               
+[121] jsonlite_2.0.0            BiocParallel_1.38.0      
+[123] GOSemSim_2.30.2           R.oo_1.27.1              
+[125] BiocSingular_1.20.0       magrittr_2.0.3           
+[127] Formula_1.2-5             GenomeInfoDbData_1.2.12  
+[129] ggplotify_0.1.2           dotCall64_1.2            
+[131] patchwork_1.3.1           Rcpp_1.1.0               
+[133] ape_5.8-1                 viridis_0.6.5            
+[135] reticulate_1.43.0         stringi_1.8.7            
+[137] ggraph_2.2.1              zlibbioc_1.50.0          
+[139] MASS_7.3-65               plyr_1.8.9               
+[141] parallel_4.4.0            listenv_0.9.1            
+[143] ggrepel_0.9.6             deldir_2.0-4             
+[145] Biostrings_2.72.1         graphlayouts_1.2.2       
+[147] splines_4.4.0             tensor_1.5.1             
+[149] hms_1.1.3                 igraph_2.1.4             
+[151] spatstat.geom_3.5-0       ggsignif_0.6.4           
+[153] RcppHNSW_0.6.0            ScaledMatrix_1.12.0      
+[155] reshape2_1.4.4            evaluate_1.0.4           
+[157] tzdb_0.5.0                tweenr_2.0.3             
+[159] httpuv_1.6.16             RANN_2.6.2               
+[161] polyclip_1.10-7           future_1.58.0            
+[163] scattermore_1.2           ggforce_0.5.0            
+[165] rsvd_1.0.5                broom_1.0.8              
+[167] xtable_1.8-4              RSpectra_0.16-2          
+[169] tidytree_0.4.6            rstatix_0.7.2            
+[171] later_1.4.2               viridisLite_0.4.2        
+[173] aplot_0.2.8               beeswarm_0.4.0           
+[175] memoise_2.0.1             cluster_2.1.8.1          
+[177] workflowr_1.7.1           timechange_0.3.0         
+[179] globals_0.18.0           </code></pre>
 </div>
 </div>
 
